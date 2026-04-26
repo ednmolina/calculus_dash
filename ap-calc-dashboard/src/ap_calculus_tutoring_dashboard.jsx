@@ -201,6 +201,26 @@ const defaultStudent = {
     'Strong improvement on limits, continuity, and core derivative rules. Current priority: mixed application problems, especially translating word problems into equations and justifying answers with units.',
 }
 
+const blankStudent = {
+  name: '',
+  course: 'AP Calculus BC',
+  targetScore: '5',
+  diagnosticScore: 0,
+  recentScore: 0,
+  frqScore: 0,
+  mcqAccuracy: 0,
+  homeworkCompletion: 0,
+  confidence: 0,
+  attendance: 0,
+  thisWeek: '',
+  improvedIn: '',
+  currentFocus: '',
+  practiceAssigned: '',
+  parentSupport: '',
+  nextSessionPlan: '',
+  notes: '',
+}
+
 function sanitizeDashboardId(value) {
   return String(value || '')
     .trim()
@@ -1494,14 +1514,6 @@ function APCalculusTutoringDashboard() {
   const initialSnapshot = normalizeDashboardSnapshot(saved)
   const initialDashboardId = getDashboardIdFromUrl() || initialSnapshot.dashboardId
   const [activePage, setActivePage] = useState('tracker')
-  const [unlockedPages] = useState(() => {
-    try {
-      const stored = sessionStorage.getItem('ap-calc-unlocked-pages')
-      return new Set(stored ? JSON.parse(stored) : [])
-    } catch {
-      return new Set()
-    }
-  })
   const [passwordModal, setPasswordModal] = useState(null)
   const [dashboardId, setDashboardId] = useState(initialDashboardId)
   const [dashboardIdDraft, setDashboardIdDraft] = useState(initialDashboardId)
@@ -1918,7 +1930,7 @@ function APCalculusTutoringDashboard() {
 
     localStorage.removeItem(STORAGE_KEY)
     setActivePage('admin')
-    setStudent(defaultStudent)
+    setStudent(blankStudent)
     setProgress(createEmptyProgress())
     setSkillRatings(createDefaultSkillRatings())
     setSessions(defaultSessions)
@@ -1946,7 +1958,7 @@ function APCalculusTutoringDashboard() {
   const PAGE_PASSWORDS = { admin: 'edenadmin', parent: 'parent26' }
 
   function handleTabClick(id) {
-    if (PAGE_PASSWORDS[id] && !unlockedPages.has(id)) {
+    if (PAGE_PASSWORDS[id]) {
       setPasswordModal({ page: id, input: '', error: false })
       return
     }
@@ -1956,10 +1968,6 @@ function APCalculusTutoringDashboard() {
   function submitPassword() {
     if (!passwordModal) return
     if (passwordModal.input === PAGE_PASSWORDS[passwordModal.page]) {
-      unlockedPages.add(passwordModal.page)
-      try {
-        sessionStorage.setItem('ap-calc-unlocked-pages', JSON.stringify([...unlockedPages]))
-      } catch {}
       setActivePage(passwordModal.page)
       setPasswordModal(null)
     } else {
