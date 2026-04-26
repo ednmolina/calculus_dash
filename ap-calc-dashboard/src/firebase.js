@@ -2,31 +2,25 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, setDoc, onSnapshot } from "firebase/firestore";
 
-// PASTE YOUR FIREBASE CONFIG FROM THE CONSOLE HERE
+// These variables are pulled from .env locally or GitHub Secrets during deployment
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-/**
- * Syncs the dashboard state to a specific student document in Firestore.
- */
 export const syncToFirebase = async (studentId, data) => {
   if (!studentId) return;
   const docRef = doc(db, "students", studentId);
   await setDoc(docRef, data, { merge: true });
 };
 
-/**
- * Listens for real-time updates for a specific student.
- */
 export const subscribeToStudent = (studentId, callback) => {
   if (!studentId) return;
   const docRef = doc(db, "students", studentId);
