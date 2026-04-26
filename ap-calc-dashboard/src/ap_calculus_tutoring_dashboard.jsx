@@ -2097,6 +2097,7 @@ function APCalculusTutoringDashboard() {
                 <select value={student.course} onChange={(event) => setStudentField('course', event.target.value)}>
                   <option>AP Calculus AB</option>
                   <option>AP Calculus BC</option>
+                  <option>AP Calculus AB + BC</option>
                 </select>
               </label>
               <label>
