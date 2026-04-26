@@ -34,8 +34,7 @@ jobs:
         run: npm run build
         working-directory: ap-calc-dashboard
         env:
-          # Replace "your-repo-name" with your actual GitHub repository name
-          VITE_BASE_PATH: /your-repo-name/
+          VITE_BASE_PATH: /calculus_dash/
 
       - uses: actions/upload-pages-artifact@v3
         with:

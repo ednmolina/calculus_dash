@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import katex from 'katex'
 import 'katex/dist/katex.min.css'
 import { diagnosticAnswerNotes, diagnosticQuestions, diagnosticSolutions } from './diagnostic_questions.js'
+import { syncToFirebase, subscribeToStudent } from './firebase.js'
 
 const STORAGE_KEY = 'ap-calc-tutoring-dashboard-v6'
 
@@ -2741,6 +2742,31 @@ function GraphSvg({
             <span>Approximation error</span>
             <strong>{formatReadout(approximationArea - numericalIntegral)}</strong>
             <p>Approximation minus numerical integral.</p>
+          </article>
+        </div>
+      )}
+      <div className="readout">
+        {hoverPoint ? (
+          <>
+            <span>x: {hoverPoint.x.toFixed(3)}</span>
+            <span>f(x): {formatReadout(hoverPoint.f)}</span>
+            <span>f&apos;(x): {formatReadout(hoverPoint.derivative)}</span>
+            <span>Integral: {formatReadout(hoverPoint.integral)}</span>
+          </>
+        ) : (
+          <span>Move over the graph to inspect x, f(x), numerical derivative, and accumulated integral.</span>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function formatReadout(value) {
+  return value === null || !Number.isFinite(value) ? 'undefined' : value.toFixed(3)
+}
+
+export default APCalculusTutoringDashboard
+>Approximation minus numerical integral.</p>
           </article>
         </div>
       )}
