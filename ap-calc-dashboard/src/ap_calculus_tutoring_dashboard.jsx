@@ -705,6 +705,16 @@ function unitProgress(row, unit) {
   return clampPercent((completedConcepts(row, unit) / unit.concepts.length) * 100)
 }
 
+function unitHasLoggedActivity(row, unit) {
+  if (!row) return false
+  if (row.taught || row.practiced || row.reviewed || row.quiz) return true
+
+  return unit.concepts.some((concept) => {
+    const conceptRow = row.concepts?.[concept]
+    return conceptRow?.taught || conceptRow?.knows || conceptRow?.reviewed
+  })
+}
+
 function validDate(value) {
   if (!value) return null
   const date = new Date(value)
@@ -1514,6 +1524,7 @@ function APCalculusTutoringDashboard() {
   const initialSnapshot = normalizeDashboardSnapshot(saved)
   const initialDashboardId = getDashboardIdFromUrl() || initialSnapshot.dashboardId
   const [activePage, setActivePage] = useState('timeline')
+  const [navOpen, setNavOpen] = useState(false)
   const [passwordModal, setPasswordModal] = useState(null)
   const unlockedGroupsRef = useRef(new Set())
   const [dashboardId, setDashboardId] = useState(initialDashboardId)
@@ -1730,6 +1741,9 @@ function APCalculusTutoringDashboard() {
     const abUnits = apUnits.filter((unit) => unit.path === 'AB/BC')
     const abProgress = abUnits.reduce((sum, unit) => sum + unitProgress(progress[unit.id], unit), 0) / abUnits.length
     const mastered = apUnits.filter((unit) => completedConcepts(progress[unit.id], unit) === unit.concepts.length).length
+    const unitsWithActivity = apUnits.filter((unit) => unitHasLoggedActivity(progress[unit.id], unit))
+    const hasTrackedProgress = unitsWithActivity.length > 0
+    const hasRatedSkills = Object.values(skillRatings).some((rating) => Number(rating) > 0)
     const risk =
       100 -
       (clampPercent(student.recentScore) * 0.3 +
@@ -1737,14 +1751,14 @@ function APCalculusTutoringDashboard() {
         clampPercent(student.mcqAccuracy) * 0.2 +
         clampPercent(student.homeworkCompletion) * 0.15 +
         clampPercent(student.attendance) * 0.1)
-    const priorityUnits = apUnits
+    const priorityUnits = unitsWithActivity
       .filter((unit) => unitProgress(progress[unit.id], unit) < 75)
       .sort((a, b) => unitProgress(progress[a.id], a) - unitProgress(progress[b.id], b))
       .slice(0, 3)
     const skillAverage = Object.values(skillRatings).reduce((sum, rating) => sum + Number(rating), 0) / skillTypes.length
     const readinessStatus = skillAverage >= 4.2 && overall >= 80 ? 'On Track' : skillAverage >= 3.2 && overall >= 60 ? 'Needs Practice' : 'Needs Attention'
     const skillPriorities = skillTypes
-      .filter((skill) => Number(skillRatings[skill.id]) < 4)
+      .filter((skill) => Number(skillRatings[skill.id]) > 0 && Number(skillRatings[skill.id]) < 4)
       .sort((a, b) => Number(skillRatings[a.id]) - Number(skillRatings[b.id]))
       .slice(0, 3)
 
@@ -1753,6 +1767,8 @@ function APCalculusTutoringDashboard() {
       abProgress: clampPercent(abProgress),
       mastered,
       risk: clampPercent(risk),
+      hasTrackedProgress,
+      hasRatedSkills,
       priorityUnits,
       skillAverage: Number(skillAverage.toFixed(1)),
       readinessStatus,
@@ -2006,7 +2022,19 @@ function APCalculusTutoringDashboard() {
           </div>
         </div>
       )}
-      <nav className="page-tabs" aria-label="Dashboard pages">
+      <div className="mobile-topbar" aria-hidden="true">
+        <button className="hamburger-btn" type="button" aria-label="Open navigation" onClick={() => setNavOpen(true)}>
+          <span /><span /><span />
+        </button>
+        <span className="mobile-page-label">
+          {[['admin','Tutor/Admin'],['tracker','Progress Tracker'],['timeline','Timeline'],['diagnostic','Diagnostic'],['graph','Function Lab'],['exam','Exam Readiness'],['student','Student View'],['references','References'],['parent','Parent View']].find(([id]) => id === activePage)?.[1] ?? ''}
+        </span>
+      </div>
+
+      {navOpen && <div className="nav-backdrop" onClick={() => setNavOpen(false)} />}
+
+      <nav className={`page-tabs${navOpen ? ' nav-open' : ''}`} aria-label="Dashboard pages">
+        <button className="nav-close-btn" type="button" aria-label="Close navigation" onClick={() => setNavOpen(false)}>✕</button>
         {[
           ['admin', 'Tutor/Admin'],
           ['tracker', 'Progress Tracker'],
@@ -2018,7 +2046,12 @@ function APCalculusTutoringDashboard() {
           ['references', 'References'],
           ['parent', 'Parent View'],
         ].map(([id, label]) => (
-          <button className={activePage === id ? 'active' : ''} key={id} type="button" onClick={() => handleTabClick(id)}>
+          <button
+            className={activePage === id ? 'active' : ''}
+            key={id}
+            type="button"
+            onClick={() => { handleTabClick(id); setNavOpen(false) }}
+          >
             {label}
           </button>
         ))}
@@ -2619,12 +2652,19 @@ function APCalculusTutoringDashboard() {
             </div>
             <h3>Highest Priority Before Mock Exam</h3>
             <div className="priority-grid">
-              {metrics.skillPriorities.map((skill) => (
-                <article key={skill.id}>
-                  <strong>{skill.label}</strong>
-                  <p>{skill.example}</p>
+              {metrics.skillPriorities.length > 0 ? (
+                metrics.skillPriorities.map((skill) => (
+                  <article key={skill.id}>
+                    <strong>{skill.label}</strong>
+                    <p>{skill.example}</p>
+                  </article>
+                ))
+              ) : (
+                <article>
+                  <strong>No exam priorities yet</strong>
+                  <p>Rate the skill rubric first so this section reflects real weak spots instead of defaults.</p>
                 </article>
-              ))}
+              )}
             </div>
           </section>
         </section>
@@ -2642,11 +2682,11 @@ function APCalculusTutoringDashboard() {
               </article>
               <article>
                 <span>Topics to review</span>
-                <strong>{metrics.priorityUnits.map((unit) => unit.title).join(', ')}</strong>
+                <strong>{metrics.priorityUnits.length > 0 ? metrics.priorityUnits.map((unit) => unit.title).join(', ') : 'Nothing flagged yet'}</strong>
               </article>
               <article>
                 <span>Mistakes to fix</span>
-                <strong>{metrics.skillPriorities.map((skill) => skill.label).join(', ')}</strong>
+                <strong>{metrics.skillPriorities.length > 0 ? metrics.skillPriorities.map((skill) => skill.label).join(', ') : 'No skill issues logged yet'}</strong>
               </article>
               <article>
                 <span>Upcoming target</span>
@@ -2715,12 +2755,19 @@ function APCalculusTutoringDashboard() {
             </div>
             <h3>Current Priority Areas</h3>
             <div className="priority-grid">
-              {metrics.priorityUnits.map((unit) => (
-                <article key={unit.id}>
-                  <strong>{unit.title}</strong>
-                  <p>Next step: practice targeted AP-style questions, then spiral review in mixed sets.</p>
+              {metrics.priorityUnits.length > 0 ? (
+                metrics.priorityUnits.map((unit) => (
+                  <article key={unit.id}>
+                    <strong>{unit.title}</strong>
+                    <p>Next step: practice targeted AP-style questions, then spiral review in mixed sets.</p>
+                  </article>
+                ))
+              ) : (
+                <article>
+                  <strong>No priority units yet</strong>
+                  <p>Once tutoring progress is logged, this section will highlight the units that need the most attention.</p>
                 </article>
-              ))}
+              )}
             </div>
             <div className="parent-update-grid">
               {[
