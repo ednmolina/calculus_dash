@@ -1,8 +1,5 @@
 {
-  "dependencies": {
-    "framer-motion": "^12.38.0",
-    "lucide-react": "^1.11.0",
-    "mathjs": "^15.2.0",
-    "recharts": "^3.8.1"
-  }
+  "name": "calculus-project-root",
+  "private": true,
+  "dependencies": {}
 }
