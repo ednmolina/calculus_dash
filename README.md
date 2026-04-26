@@ -8,10 +8,10 @@ This document serves as a reference for developers looking to understand the arc
 
 ## 🏗️ Architecture & Philosophy
 
-The application is a **Pure Client-Side React Single Page Application (SPA)** built with Vite. 
+The application is a **Client-Side React Single Page Application (SPA)** built with Vite and designed to run on GitHub Pages.
 
 **Key Design Decisions:**
-1. **Zero-Backend / Privacy First:** All user data (student info, progress, grades, logs) is stored entirely in the browser's `localStorage`. There is no database or server-side state.
+1. **Static Frontend + Optional Firestore Sync:** The UI is fully static, but shared dashboard state can be synced through Firebase Firestore. `localStorage` remains as a browser cache/fallback.
 2. **Custom Math Engine:** Instead of relying on heavy external math libraries for graphing, the app uses a lightweight, custom tokenizer and JavaScript `Function` constructor to evaluate math expressions securely and quickly.
 3. **KaTeX Integration:** All mathematical typesetting for diagnostics and reference sheets is rendered using KaTeX for high performance and beautiful typography.
 
@@ -31,10 +31,10 @@ The application is a **Pure Client-Side React Single Page Application (SPA)** bu
   |  +--------------------------+-------------------------+     |
   |                             |                               |
   |                             v                               |
-  |  +----------------------------------------------------+     |
-  |  |                  localStorage                      |     |
-  |  |         Key: 'ap-calc-tutoring-dashboard-v6'       |     |
-  |  +----------------------------------------------------+     |
+  |  +--------------------+  +---------------------------+     |
+  |  |    localStorage    |  |   Firebase / Firestore    |     |
+  |  | browser cache      |  | live shared dashboard     |     |
+  |  +--------------------+  +---------------------------+     |
   +-------------------------------------------------------------+
 ```
 
@@ -58,7 +58,7 @@ ap-calc-dashboard/
 
 ## 🧠 State Management
 
-The entire application state is held in the `APCalculusTutoringDashboard` component using `useState` hooks. A single `useEffect` hook synchronizes this state to `localStorage` whenever it changes.
+The entire application state is held in the `APCalculusTutoringDashboard` component using `useState` hooks. Effects persist the state to `localStorage` and, when a shared dashboard ID is configured, synchronize it to Firestore.
 
 ### Core State Objects:
 

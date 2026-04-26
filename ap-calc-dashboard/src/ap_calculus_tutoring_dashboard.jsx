@@ -2,9 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import katex from 'katex'
 import 'katex/dist/katex.min.css'
 import { diagnosticAnswerNotes, diagnosticQuestions, diagnosticSolutions } from './diagnostic_questions.js'
-import { syncToFirebase, subscribeToStudent } from './firebase.js'
+import { firebaseEnabled, subscribeToDashboard, syncDashboardToFirebase } from './firebase.js'
 
 const STORAGE_KEY = 'ap-calc-tutoring-dashboard-v6'
+const CLIENT_ID_KEY = 'ap-calc-dashboard-client-id'
+const DASHBOARD_QUERY_PARAM = 'dashboard'
 
 const statusDateFields = {
   taught: 'taughtAt',
@@ -197,6 +199,128 @@ const defaultStudent = {
   nextSessionPlan: 'Timed related-rates set, then short FRQ justification practice.',
   notes:
     'Strong improvement on limits, continuity, and core derivative rules. Current priority: mixed application problems, especially translating word problems into equations and justifying answers with units.',
+}
+
+function sanitizeDashboardId(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80)
+}
+
+function getDashboardIdFromUrl() {
+  if (typeof window === 'undefined') return ''
+
+  try {
+    const url = new URL(window.location.href)
+    return sanitizeDashboardId(url.searchParams.get(DASHBOARD_QUERY_PARAM))
+  } catch {
+    return ''
+  }
+}
+
+function syncDashboardIdToUrl(dashboardId) {
+  if (typeof window === 'undefined') return
+
+  const url = new URL(window.location.href)
+  if (dashboardId) {
+    url.searchParams.set(DASHBOARD_QUERY_PARAM, dashboardId)
+  } else {
+    url.searchParams.delete(DASHBOARD_QUERY_PARAM)
+  }
+
+  window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`)
+}
+
+function getClientId() {
+  if (typeof window === 'undefined') return 'server'
+
+  const existing = window.localStorage.getItem(CLIENT_ID_KEY)
+  if (existing) return existing
+
+  const next = `client-${Math.random().toString(36).slice(2, 10)}`
+  window.localStorage.setItem(CLIENT_ID_KEY, next)
+  return next
+}
+
+function normalizeDashboardSnapshot(saved = {}, fallbackDashboardId = '') {
+  const snapshot = saved?.state && typeof saved.state === 'object' ? saved.state : saved
+
+  return {
+    dashboardId: sanitizeDashboardId(snapshot?.dashboardId || fallbackDashboardId),
+    student: { ...defaultStudent, ...(snapshot?.student || {}) },
+    progress: hydrateProgress(snapshot?.progress),
+    skillRatings: createDefaultSkillRatings(snapshot?.skillRatings),
+    sessions: Array.isArray(snapshot?.sessions) ? snapshot.sessions : defaultSessions,
+    mistakes: Array.isArray(snapshot?.mistakes) ? snapshot.mistakes : defaultMistakes,
+    diagnosticResponses: snapshot?.diagnosticResponses || {},
+    timeline: {
+      goalEndDate: snapshot?.timeline?.goalEndDate || defaultMasteryGoal.endDate,
+    },
+    graph: {
+      ...defaultGraphState,
+      ...(snapshot?.graph || {}),
+    },
+  }
+}
+
+function buildDashboardSnapshot({
+  dashboardId,
+  student,
+  progress,
+  skillRatings,
+  sessions,
+  mistakes,
+  diagnosticResponses,
+  masteryEndDate,
+  expression,
+  xMin,
+  xMax,
+  yMin,
+  yMax,
+  showDerivative,
+  showIntegral,
+  approxMethod,
+  approxN,
+  approxA,
+  approxB,
+  eulerY0,
+  transformParent,
+  transformParams,
+}) {
+  return {
+    dashboardId,
+    student,
+    progress,
+    skillRatings,
+    sessions,
+    mistakes,
+    diagnosticResponses,
+    timeline: { goalEndDate: masteryEndDate },
+    graph: { expression, xMin, xMax, yMin, yMax, showDerivative, showIntegral, approxMethod, approxN, approxA, approxB, eulerY0, transformParent, transformParams },
+  }
+}
+
+function getSyncStatusCopy(syncStatus, dashboardId) {
+  if (!dashboardId) return 'Local-only mode. Add a shared dashboard ID to turn on live sync.'
+  if (!firebaseEnabled) return 'Firebase config is missing. Add .env locally or GitHub Secrets for deployed builds.'
+
+  switch (syncStatus) {
+    case 'connecting':
+      return 'Connecting to Firestore...'
+    case 'ready':
+      return 'Connected. This dashboard is ready to sync.'
+    case 'saving':
+      return 'Saving changes to Firestore...'
+    case 'live':
+      return 'Live sync is active. Other open sessions on the same dashboard ID should update automatically.'
+    case 'error':
+      return 'Firestore sync failed. Check your Firebase config and Firestore rules.'
+    default:
+      return 'Local-only mode. Add a shared dashboard ID to turn on live sync.'
+  }
 }
 
 const tutorKpis = [
@@ -1367,68 +1491,203 @@ function TheoremMiniPlot({ type }) {
 
 function APCalculusTutoringDashboard() {
   const saved = typeof window !== 'undefined' ? loadDashboardState() : null
+  const initialSnapshot = normalizeDashboardSnapshot(saved)
+  const initialDashboardId = getDashboardIdFromUrl() || initialSnapshot.dashboardId
   const [activePage, setActivePage] = useState('admin')
-  const [student, setStudent] = useState(saved?.student || defaultStudent)
-  const [progress, setProgress] = useState(hydrateProgress(saved?.progress))
-  const [skillRatings, setSkillRatings] = useState(createDefaultSkillRatings(saved?.skillRatings))
-  const [sessions, setSessions] = useState(saved?.sessions || defaultSessions)
-  const [mistakes, setMistakes] = useState(saved?.mistakes || defaultMistakes)
-  const [diagnosticResponses, setDiagnosticResponses] = useState(saved?.diagnosticResponses || {})
-  const [masteryEndDate, setMasteryEndDate] = useState(saved?.timeline?.goalEndDate || defaultMasteryGoal.endDate)
+  const [dashboardId, setDashboardId] = useState(initialDashboardId)
+  const [dashboardIdDraft, setDashboardIdDraft] = useState(initialDashboardId)
+  const [syncStatus, setSyncStatus] = useState(initialDashboardId ? (firebaseEnabled ? 'connecting' : 'error') : 'idle')
+  const [student, setStudent] = useState(initialSnapshot.student)
+  const [progress, setProgress] = useState(initialSnapshot.progress)
+  const [skillRatings, setSkillRatings] = useState(initialSnapshot.skillRatings)
+  const [sessions, setSessions] = useState(initialSnapshot.sessions)
+  const [mistakes, setMistakes] = useState(initialSnapshot.mistakes)
+  const [diagnosticResponses, setDiagnosticResponses] = useState(initialSnapshot.diagnosticResponses)
+  const [masteryEndDate, setMasteryEndDate] = useState(initialSnapshot.timeline.goalEndDate)
   const [unitFilter, setUnitFilter] = useState('bc')
-  const [expression, setExpression] = useState(saved?.graph?.expression || defaultGraphState.expression)
-  const [xMin, setXMin] = useState(saved?.graph?.xMin ?? defaultGraphState.xMin)
-  const [xMax, setXMax] = useState(saved?.graph?.xMax ?? defaultGraphState.xMax)
-  const [yMin, setYMin] = useState(saved?.graph?.yMin ?? defaultGraphState.yMin)
-  const [yMax, setYMax] = useState(saved?.graph?.yMax ?? defaultGraphState.yMax)
-  const [showDerivative, setShowDerivative] = useState(saved?.graph?.showDerivative ?? defaultGraphState.showDerivative)
-  const [showIntegral, setShowIntegral] = useState(saved?.graph?.showIntegral ?? defaultGraphState.showIntegral)
-  const [approxMethod, setApproxMethod] = useState(saved?.graph?.approxMethod || defaultGraphState.approxMethod)
-  const [approxN, setApproxN] = useState(saved?.graph?.approxN || defaultGraphState.approxN)
-  const [approxA, setApproxA] = useState(saved?.graph?.approxA ?? defaultGraphState.approxA)
-  const [approxB, setApproxB] = useState(saved?.graph?.approxB ?? defaultGraphState.approxB)
-  const [eulerY0, setEulerY0] = useState(saved?.graph?.eulerY0 || defaultGraphState.eulerY0)
-  const [transformParent, setTransformParent] = useState(saved?.graph?.transformParent || defaultGraphState.transformParent)
-  const [transformParams, setTransformParams] = useState(saved?.graph?.transformParams || defaultGraphState.transformParams)
+  const [expression, setExpression] = useState(initialSnapshot.graph.expression)
+  const [xMin, setXMin] = useState(initialSnapshot.graph.xMin)
+  const [xMax, setXMax] = useState(initialSnapshot.graph.xMax)
+  const [yMin, setYMin] = useState(initialSnapshot.graph.yMin)
+  const [yMax, setYMax] = useState(initialSnapshot.graph.yMax)
+  const [showDerivative, setShowDerivative] = useState(initialSnapshot.graph.showDerivative)
+  const [showIntegral, setShowIntegral] = useState(initialSnapshot.graph.showIntegral)
+  const [approxMethod, setApproxMethod] = useState(initialSnapshot.graph.approxMethod)
+  const [approxN, setApproxN] = useState(initialSnapshot.graph.approxN)
+  const [approxA, setApproxA] = useState(initialSnapshot.graph.approxA)
+  const [approxB, setApproxB] = useState(initialSnapshot.graph.approxB)
+  const [eulerY0, setEulerY0] = useState(initialSnapshot.graph.eulerY0)
+  const [transformParent, setTransformParent] = useState(initialSnapshot.graph.transformParent)
+  const [transformParams, setTransformParams] = useState(initialSnapshot.graph.transformParams)
   const [hoverIndex, setHoverIndex] = useState(null)
+  const clientIdRef = useRef(null)
+  const currentSnapshotJsonRef = useRef('')
+  const lastRemoteSnapshotJsonRef = useRef('')
+  const skipNextRemoteWriteRef = useRef(false)
+  const remoteReadyRef = useRef(!initialDashboardId || !firebaseEnabled)
 
-  useEffect(() => {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
+  if (clientIdRef.current == null) {
+    clientIdRef.current = getClientId()
+  }
+
+  const dashboardSnapshot = useMemo(
+    () =>
+      buildDashboardSnapshot({
+        dashboardId,
         student,
         progress,
         skillRatings,
         sessions,
         mistakes,
         diagnosticResponses,
-        timeline: { goalEndDate: masteryEndDate },
-        graph: { expression, xMin, xMax, yMin, yMax, showDerivative, showIntegral, approxMethod, approxN, approxA, approxB, eulerY0, transformParent, transformParams },
+        masteryEndDate,
+        expression,
+        xMin,
+        xMax,
+        yMin,
+        yMax,
+        showDerivative,
+        showIntegral,
+        approxMethod,
+        approxN,
+        approxA,
+        approxB,
+        eulerY0,
+        transformParent,
+        transformParams,
       }),
+    [
+      dashboardId,
+      student,
+      progress,
+      skillRatings,
+      sessions,
+      mistakes,
+      diagnosticResponses,
+      masteryEndDate,
+      expression,
+      xMin,
+      xMax,
+      yMin,
+      yMax,
+      showDerivative,
+      showIntegral,
+      approxMethod,
+      approxN,
+      approxA,
+      approxB,
+      eulerY0,
+      transformParent,
+      transformParams,
+    ],
+  )
+  const dashboardSnapshotJson = useMemo(() => JSON.stringify(dashboardSnapshot), [dashboardSnapshot])
+
+  useEffect(() => {
+    currentSnapshotJsonRef.current = dashboardSnapshotJson
+    localStorage.setItem(STORAGE_KEY, dashboardSnapshotJson)
+  }, [dashboardSnapshotJson])
+
+  useEffect(() => {
+    syncDashboardIdToUrl(dashboardId)
+
+    if (!dashboardId) {
+      remoteReadyRef.current = true
+      return
+    }
+
+    if (!firebaseEnabled) {
+      remoteReadyRef.current = true
+      return
+    }
+
+    remoteReadyRef.current = false
+
+    const unsubscribe = subscribeToDashboard(
+      dashboardId,
+      (remoteDoc) => {
+        remoteReadyRef.current = true
+
+        if (!remoteDoc) {
+          setSyncStatus('ready')
+          return
+        }
+
+        const remoteSnapshot = normalizeDashboardSnapshot(remoteDoc, dashboardId)
+        const remoteSnapshotJson = JSON.stringify(remoteSnapshot)
+
+        lastRemoteSnapshotJsonRef.current = remoteSnapshotJson
+
+        if (remoteSnapshotJson === currentSnapshotJsonRef.current) {
+          setSyncStatus('live')
+          return
+        }
+
+        skipNextRemoteWriteRef.current = true
+        setDashboardIdDraft(remoteSnapshot.dashboardId)
+        setStudent(remoteSnapshot.student)
+        setProgress(remoteSnapshot.progress)
+        setSkillRatings(remoteSnapshot.skillRatings)
+        setSessions(remoteSnapshot.sessions)
+        setMistakes(remoteSnapshot.mistakes)
+        setDiagnosticResponses(remoteSnapshot.diagnosticResponses)
+        setMasteryEndDate(remoteSnapshot.timeline.goalEndDate)
+        setExpression(remoteSnapshot.graph.expression)
+        setXMin(remoteSnapshot.graph.xMin)
+        setXMax(remoteSnapshot.graph.xMax)
+        setYMin(remoteSnapshot.graph.yMin)
+        setYMax(remoteSnapshot.graph.yMax)
+        setShowDerivative(remoteSnapshot.graph.showDerivative)
+        setShowIntegral(remoteSnapshot.graph.showIntegral)
+        setApproxMethod(remoteSnapshot.graph.approxMethod)
+        setApproxN(remoteSnapshot.graph.approxN)
+        setApproxA(remoteSnapshot.graph.approxA)
+        setApproxB(remoteSnapshot.graph.approxB)
+        setEulerY0(remoteSnapshot.graph.eulerY0)
+        setTransformParent(remoteSnapshot.graph.transformParent)
+        setTransformParams(remoteSnapshot.graph.transformParams)
+        setSyncStatus('live')
+      },
+      () => {
+        remoteReadyRef.current = true
+        setSyncStatus('error')
+      },
     )
-  }, [
-    student,
-    progress,
-    skillRatings,
-    sessions,
-    mistakes,
-    diagnosticResponses,
-    masteryEndDate,
-    expression,
-    xMin,
-    xMax,
-    yMin,
-    yMax,
-    showDerivative,
-    showIntegral,
-    approxMethod,
-    approxN,
-    approxA,
-    approxB,
-    eulerY0,
-    transformParent,
-    transformParams,
-  ])
+
+    return () => unsubscribe()
+  }, [dashboardId])
+
+  useEffect(() => {
+    if (!dashboardId || !firebaseEnabled || !remoteReadyRef.current) return
+
+    if (skipNextRemoteWriteRef.current) {
+      skipNextRemoteWriteRef.current = false
+      return
+    }
+
+    if (dashboardSnapshotJson === lastRemoteSnapshotJsonRef.current) return
+
+    let cancelled = false
+    setSyncStatus('saving')
+
+    syncDashboardToFirebase(dashboardId, {
+      state: dashboardSnapshot,
+      meta: { updatedBy: clientIdRef.current },
+    })
+      .then(() => {
+        if (cancelled) return
+        lastRemoteSnapshotJsonRef.current = dashboardSnapshotJson
+        setSyncStatus('live')
+      })
+      .catch(() => {
+        if (cancelled) return
+        setSyncStatus('error')
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [dashboardId, dashboardSnapshot, dashboardSnapshotJson])
 
   const visibleUnits = apUnits.filter((unit) => {
     if (unitFilter === 'all') return true
@@ -1436,6 +1695,13 @@ function APCalculusTutoringDashboard() {
     if (unitFilter === 'bc-only') return unit.path === 'BC only'
     return true
   })
+  const syncStatusCopy = getSyncStatusCopy(syncStatus, dashboardId)
+  const shareUrl = useMemo(() => {
+    if (typeof window === 'undefined' || !dashboardId) return ''
+    const url = new URL(window.location.href)
+    url.searchParams.set(DASHBOARD_QUERY_PARAM, dashboardId)
+    return url.toString()
+  }, [dashboardId])
 
   const metrics = useMemo(() => {
     const overall = apUnits.reduce((sum, unit) => sum + unitProgress(progress[unit.id], unit), 0) / apUnits.length
@@ -1544,6 +1810,13 @@ function APCalculusTutoringDashboard() {
 
   function preventNumberWheel(event) {
     event.currentTarget.blur()
+  }
+
+  function applySharedDashboardId() {
+    const nextDashboardId = sanitizeDashboardId(dashboardIdDraft)
+    setDashboardIdDraft(nextDashboardId)
+    setDashboardId(nextDashboardId)
+    setSyncStatus(nextDashboardId ? (firebaseEnabled ? 'connecting' : 'error') : 'idle')
   }
 
   function setStudentField(field, value) {
@@ -1693,6 +1966,29 @@ function APCalculusTutoringDashboard() {
           <section className="panel split-panel">
             <div>
               <h2>Student Setup</h2>
+              <label>
+                Shared dashboard ID
+                <input
+                  placeholder="calc-student-1"
+                  value={dashboardIdDraft}
+                  onChange={(event) => setDashboardIdDraft(event.target.value)}
+                />
+              </label>
+              <div className="section-header compact-header">
+                <p className="helper-copy">
+                  Use the same dashboard ID and page URL on every device that should stay in sync.
+                </p>
+                <button className="mini-button fit-button" type="button" onClick={applySharedDashboardId}>
+                  Use shared ID
+                </button>
+              </div>
+              <p className="syntax-note">{syncStatusCopy}</p>
+              {shareUrl && (
+                <label>
+                  Shared page URL
+                  <input readOnly value={shareUrl} />
+                </label>
+              )}
               <label>
                 Course
                 <select value={student.course} onChange={(event) => setStudentField('course', event.target.value)}>
