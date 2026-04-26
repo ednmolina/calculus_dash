@@ -2766,28 +2766,3 @@ function formatReadout(value) {
 }
 
 export default APCalculusTutoringDashboard
->Approximation minus numerical integral.</p>
-          </article>
-        </div>
-      )}
-      <div className="readout">
-        {hoverPoint ? (
-          <>
-            <span>x: {hoverPoint.x.toFixed(3)}</span>
-            <span>f(x): {formatReadout(hoverPoint.f)}</span>
-            <span>f&apos;(x): {formatReadout(hoverPoint.derivative)}</span>
-            <span>Integral: {formatReadout(hoverPoint.integral)}</span>
-          </>
-        ) : (
-          <span>Move over the graph to inspect x, f(x), numerical derivative, and accumulated integral.</span>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function formatReadout(value) {
-  return value === null || !Number.isFinite(value) ? 'undefined' : value.toFixed(3)
-}
-
-export default APCalculusTutoringDashboard
