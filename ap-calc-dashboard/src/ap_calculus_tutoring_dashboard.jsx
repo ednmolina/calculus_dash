@@ -1513,7 +1513,7 @@ function APCalculusTutoringDashboard() {
   const saved = typeof window !== 'undefined' ? loadDashboardState() : null
   const initialSnapshot = normalizeDashboardSnapshot(saved)
   const initialDashboardId = getDashboardIdFromUrl() || initialSnapshot.dashboardId
-  const [activePage, setActivePage] = useState('tracker')
+  const [activePage, setActivePage] = useState('timeline')
   const [passwordModal, setPasswordModal] = useState(null)
   const unlockedGroupsRef = useRef(new Set())
   const [dashboardId, setDashboardId] = useState(initialDashboardId)
