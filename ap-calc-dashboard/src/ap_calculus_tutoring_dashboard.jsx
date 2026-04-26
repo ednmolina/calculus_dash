@@ -1515,6 +1515,7 @@ function APCalculusTutoringDashboard() {
   const initialDashboardId = getDashboardIdFromUrl() || initialSnapshot.dashboardId
   const [activePage, setActivePage] = useState('tracker')
   const [passwordModal, setPasswordModal] = useState(null)
+  const unlockedGroupsRef = useRef(new Set())
   const [dashboardId, setDashboardId] = useState(initialDashboardId)
   const [dashboardIdDraft, setDashboardIdDraft] = useState(initialDashboardId)
   const [syncStatus, setSyncStatus] = useState(initialDashboardId ? (firebaseEnabled ? 'connecting' : 'error') : 'idle')
@@ -1955,11 +1956,14 @@ function APCalculusTutoringDashboard() {
     setHoverIndex(null)
   }
 
-  const PAGE_PASSWORDS = { admin: 'edenadmin', parent: 'parent26' }
+  // Pages that share a group use the same password; unlocking one unlocks all in the group.
+  const PAGE_PASSWORD_GROUP = { admin: 'tutor', tracker: 'tutor', parent: 'parent' }
+  const GROUP_PASSWORDS = { tutor: 'edenadmin', parent: 'parent26' }
 
   function handleTabClick(id) {
-    if (PAGE_PASSWORDS[id]) {
-      setPasswordModal({ page: id, input: '', error: false })
+    const group = PAGE_PASSWORD_GROUP[id]
+    if (group && !unlockedGroupsRef.current.has(group)) {
+      setPasswordModal({ page: id, group, input: '', error: false })
       return
     }
     setActivePage(id)
@@ -1967,7 +1971,8 @@ function APCalculusTutoringDashboard() {
 
   function submitPassword() {
     if (!passwordModal) return
-    if (passwordModal.input === PAGE_PASSWORDS[passwordModal.page]) {
+    if (passwordModal.input === GROUP_PASSWORDS[passwordModal.group]) {
+      unlockedGroupsRef.current.add(passwordModal.group)
       setActivePage(passwordModal.page)
       setPasswordModal(null)
     } else {
