@@ -144,29 +144,39 @@ Open `src/diagnostic_questions.js`.
 
 ---
 
-## 🚀 Development Workflow
+## 🚀 How to Run the Dashboard
 
-### Setup
+The application requires Node.js to run. All operations happen within the `ap-calc-dashboard` directory.
 
-1. **Navigate to the frontend directory:**
-   ```bash
-   cd ap-calc-dashboard
-   ```
+### 1. Initial Setup
 
-2. **Install the dependencies:**
-   ```bash
-   npm install
-   ```
+Open your terminal, navigate to the correct folder, and install the dependencies:
 
-3. **Start the Vite development server:**
-   ```bash
-   npm run dev
-   ```
+```bash
+# 1. Move into the dashboard directory
+cd ap-calc-dashboard
 
-### Scripts
-- `npm run dev`: Starts local dev server with Hot Module Replacement (HMR).
+# 2. Install all required Node packages
+npm install
+```
+
+### 2. Running for Development
+
+To start the local development server (which includes Hot Module Replacement so your changes appear instantly):
+
+```bash
+# Make sure you are inside ap-calc-dashboard!
+npm run dev
+```
+
+After running this command, your terminal will provide a `localhost` URL (usually `http://localhost:5173`). Open that URL in your web browser to use the dashboard.
+
+### 3. Other Available Commands
+
+Run these commands from inside the `ap-calc-dashboard` directory:
+
 - `npm run build`: Compiles the application for production.
-- `npm run lint`: Runs ESLint for code quality.
+- `npm run lint`: Runs ESLint to check for code quality and errors.
 
 ## 📋 Python Environment Requirements (For External Analytics)
 *Note: The React frontend does not require Python.*
