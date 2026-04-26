@@ -1928,3 +1928,85 @@ textarea {
     grid-template-columns: 1fr;
   }
 }
+
+.password-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.password-modal {
+  background: var(--card-bg, #1e1e2e);
+  border: 1px solid var(--border, #333);
+  border-radius: 12px;
+  padding: 2rem 2.4rem;
+  width: min(380px, 90vw);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.password-modal-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.password-modal-subtitle {
+  font-size: 0.85rem;
+  opacity: 0.65;
+  margin: 0;
+}
+
+.password-modal-input {
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--border, #444);
+  background: var(--input-bg, #12121c);
+  color: inherit;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+}
+
+.password-modal-input.error {
+  border-color: #e05c5c;
+}
+
+.password-modal-error {
+  font-size: 0.8rem;
+  color: #e05c5c;
+  margin: 0;
+}
+
+.password-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 0.25rem;
+}
+
+.password-modal-cancel {
+  padding: 0.45rem 1rem;
+  border-radius: 6px;
+  border: 1px solid var(--border, #444);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.password-modal-submit {
+  padding: 0.45rem 1.1rem;
+  border-radius: 6px;
+  border: none;
+  background: var(--accent, #6c63ff);
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+}

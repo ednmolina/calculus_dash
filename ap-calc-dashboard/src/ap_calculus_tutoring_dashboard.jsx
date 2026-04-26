@@ -1493,7 +1493,16 @@ function APCalculusTutoringDashboard() {
   const saved = typeof window !== 'undefined' ? loadDashboardState() : null
   const initialSnapshot = normalizeDashboardSnapshot(saved)
   const initialDashboardId = getDashboardIdFromUrl() || initialSnapshot.dashboardId
-  const [activePage, setActivePage] = useState('admin')
+  const [activePage, setActivePage] = useState('tracker')
+  const [unlockedPages] = useState(() => {
+    try {
+      const stored = sessionStorage.getItem('ap-calc-unlocked-pages')
+      return new Set(stored ? JSON.parse(stored) : [])
+    } catch {
+      return new Set()
+    }
+  })
+  const [passwordModal, setPasswordModal] = useState(null)
   const [dashboardId, setDashboardId] = useState(initialDashboardId)
   const [dashboardIdDraft, setDashboardIdDraft] = useState(initialDashboardId)
   const [syncStatus, setSyncStatus] = useState(initialDashboardId ? (firebaseEnabled ? 'connecting' : 'error') : 'idle')
@@ -1934,8 +1943,56 @@ function APCalculusTutoringDashboard() {
     setHoverIndex(null)
   }
 
+  const PAGE_PASSWORDS = { admin: 'edenadmin', parent: 'parent26' }
+
+  function handleTabClick(id) {
+    if (PAGE_PASSWORDS[id] && !unlockedPages.has(id)) {
+      setPasswordModal({ page: id, input: '', error: false })
+      return
+    }
+    setActivePage(id)
+  }
+
+  function submitPassword() {
+    if (!passwordModal) return
+    if (passwordModal.input === PAGE_PASSWORDS[passwordModal.page]) {
+      unlockedPages.add(passwordModal.page)
+      try {
+        sessionStorage.setItem('ap-calc-unlocked-pages', JSON.stringify([...unlockedPages]))
+      } catch {}
+      setActivePage(passwordModal.page)
+      setPasswordModal(null)
+    } else {
+      setPasswordModal((m) => ({ ...m, error: true, input: '' }))
+    }
+  }
+
   return (
     <main className="dashboard-shell">
+      {passwordModal && (
+        <div className="password-overlay" role="dialog" aria-modal="true" aria-label="Password required">
+          <div className="password-modal">
+            <h2 className="password-modal-title">
+              {passwordModal.page === 'admin' ? 'Tutor/Admin' : 'Parent View'}
+            </h2>
+            <p className="password-modal-subtitle">Enter the password to access this page.</p>
+            <input
+              autoFocus
+              className={`password-modal-input${passwordModal.error ? ' error' : ''}`}
+              type="password"
+              placeholder="Password"
+              value={passwordModal.input}
+              onChange={(e) => setPasswordModal((m) => ({ ...m, input: e.target.value, error: false }))}
+              onKeyDown={(e) => { if (e.key === 'Enter') submitPassword() }}
+            />
+            {passwordModal.error && <p className="password-modal-error">Incorrect password. Try again.</p>}
+            <div className="password-modal-actions">
+              <button type="button" className="password-modal-cancel" onClick={() => setPasswordModal(null)}>Cancel</button>
+              <button type="button" className="password-modal-submit" onClick={submitPassword}>Unlock</button>
+            </div>
+          </div>
+        </div>
+      )}
       <nav className="page-tabs" aria-label="Dashboard pages">
         {[
           ['admin', 'Tutor/Admin'],
@@ -1948,7 +2005,7 @@ function APCalculusTutoringDashboard() {
           ['references', 'References'],
           ['parent', 'Parent View'],
         ].map(([id, label]) => (
-          <button className={activePage === id ? 'active' : ''} key={id} type="button" onClick={() => setActivePage(id)}>
+          <button className={activePage === id ? 'active' : ''} key={id} type="button" onClick={() => handleTabClick(id)}>
             {label}
           </button>
         ))}
