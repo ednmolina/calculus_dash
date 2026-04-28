@@ -697,27 +697,29 @@ textarea {
   display: grid;
   grid-template-columns: 340px minmax(980px, 1fr);
   gap: 22px;
-  min-height: 112px;
   padding-top: 18px;
   border-top: 1px solid rgba(28, 49, 41, 0.12);
 }
 
 .timeline-milestones > strong {
   color: #4e3b92;
+  padding-top: 6px;
+}
+
+.milestone-track-wrapper {
+  display: grid;
+  gap: 18px;
+}
+
+.milestone-track {
+  position: relative;
+  height: 36px;
 }
 
 .milestone {
   position: absolute;
   top: 0;
   transform: translateX(-50%);
-  display: grid;
-  justify-items: center;
-  gap: 8px;
-  min-width: 96px;
-  color: #4e3b92;
-  font-size: 0.75rem;
-  font-weight: 900;
-  text-align: center;
 }
 
 .milestone b {
@@ -729,21 +731,50 @@ textarea {
   border-radius: 7px;
   color: #fff;
   background: #4e24a8;
+  font-size: 0.72rem;
 }
 
 .milestone b.complete {
   background: #1f8a4c;
 }
 
-.milestone em {
-  display: grid;
-  gap: 2px;
-  max-width: 98px;
-  color: #4e3b92;
-  font-style: normal;
+.milestone-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
 }
 
-.milestone small {
+.milestone-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: #4e3b92;
+  white-space: nowrap;
+}
+
+.milestone-legend-item b {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  transform: rotate(45deg);
+  border-radius: 5px;
+  color: #fff;
+  background: #4e24a8;
+  font-size: 0.65rem;
+  flex-shrink: 0;
+}
+
+.milestone-legend-item.complete b {
+  background: #1f8a4c;
+}
+
+.milestone-legend-item span {
+  font-weight: 700;
+}
+
+.milestone-legend-item small {
   color: #7a6aa8;
   font-size: 0.68rem;
 }
@@ -2118,4 +2149,51 @@ textarea {
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 600;
+}
+
+.volume-lab {
+  display: grid;
+  gap: 16px;
+}
+
+.volume-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: end;
+}
+
+.volume-controls label {
+  display: grid;
+  gap: 4px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #1c3129;
+}
+
+.volume-controls select,
+.volume-controls input {
+  padding: 6px 10px;
+  border: 1px solid rgba(28, 49, 41, 0.25);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  background: #fff;
+  min-width: 220px;
+}
+
+.volume-formula {
+  background: rgba(78, 36, 168, 0.06);
+  border: 1px solid rgba(78, 36, 168, 0.15);
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 0.9rem;
+}
+
+.volume-svg {
+  width: 100%;
+  max-width: 700px;
+  border-radius: 8px;
+  border: 1px solid rgba(28, 49, 41, 0.12);
+  cursor: crosshair;
+  display: block;
 }
