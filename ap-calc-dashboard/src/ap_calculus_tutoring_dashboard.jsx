@@ -792,7 +792,13 @@ function getConceptDates(row, unit) {
   })
 }
 
-function buildTimeline(progress, goalEndDate = defaultMasteryGoal.endDate) {
+function courseUnits(course) {
+  if (course === 'AP Calculus AB') return apUnits.filter((u) => u.path === 'AB/BC')
+  return apUnits // BC or Both includes all units
+}
+
+function buildTimeline(progress, goalEndDate = defaultMasteryGoal.endDate, course = 'AP Calculus BC') {
+  const units = courseUnits(course)
   const fallbackEnd = dateInputToNoon(defaultMasteryGoal.endDate, new Date(2026, 8, 30, 12))
   const selectedEnd = dateInputToNoon(goalEndDate, fallbackEnd)
   const goal = {
@@ -800,12 +806,12 @@ function buildTimeline(progress, goalEndDate = defaultMasteryGoal.endDate) {
     end: selectedEnd > defaultMasteryGoal.start ? selectedEnd : fallbackEnd,
   }
   const goalSpan = goal.end.getTime() - goal.start.getTime()
-  const unitPlanWindow = goalSpan / apUnits.length
-  const rows = apUnits.map((unit) => {
+  const unitPlanWindow = goalSpan / units.length
+  const rows = units.map((unit) => {
     const row = progress[unit.id]
-    const unitIndex = apUnits.findIndex((candidate) => candidate.id === unit.id)
+    const unitIndex = units.findIndex((candidate) => candidate.id === unit.id)
     const plannedStart = new Date(goal.start.getTime() + unitPlanWindow * unitIndex)
-    const plannedEnd = unitIndex === apUnits.length - 1 ? goal.end : new Date(goal.start.getTime() + unitPlanWindow * (unitIndex + 1))
+    const plannedEnd = unitIndex === units.length - 1 ? goal.end : new Date(goal.start.getTime() + unitPlanWindow * (unitIndex + 1))
     const dates = getConceptDates(row, unit)
     const score = unitProgress(row, unit)
     const start = dates.length ? new Date(Math.min(...dates.map((date) => date.getTime()))) : null
@@ -864,7 +870,7 @@ function buildTimeline(progress, goalEndDate = defaultMasteryGoal.endDate) {
     }))
 
   const completedConceptCount = rows.reduce((sum, row) => sum + row.knowsCount, 0)
-  const totalConceptCount = apUnits.reduce((sum, unit) => sum + unit.concepts.length, 0)
+  const totalConceptCount = units.reduce((sum, unit) => sum + unit.concepts.length, 0)
   const expectedOverall =
     today < goal.start
       ? 0
@@ -873,7 +879,7 @@ function buildTimeline(progress, goalEndDate = defaultMasteryGoal.endDate) {
         : clampPercent(((today.getTime() - goal.start.getTime()) / goalSpan) * 100)
   const actualOverall = clampPercent((completedConceptCount / totalConceptCount) * 100)
 
-  return { rows, start, end, span, months, today, milestones, goal, expectedOverall, actualOverall }
+  return { rows, start, end, span, months, today, milestones, goal, expectedOverall, actualOverall, course, unitCount: units.length }
 }
 
 function normalizeExpression(expression) {
@@ -1840,7 +1846,7 @@ function APCalculusTutoringDashboard() {
     }
   }, [expression, xMin, xMax, yMin, yMax])
 
-  const timeline = useMemo(() => buildTimeline(progress, masteryEndDate), [progress, masteryEndDate])
+  const timeline = useMemo(() => buildTimeline(progress, masteryEndDate, student.course), [progress, masteryEndDate, student.course])
   const diagnosticSummary = useMemo(() => buildDiagnosticSummary(diagnosticResponses), [diagnosticResponses])
 
   const hoverPoint = hoverIndex === null ? null : graph.data[hoverIndex]
@@ -2859,6 +2865,7 @@ function TimelineView({ timeline }) {
         <div>
           <p className="eyebrow">Auto-built from tracker logs</p>
           <h2>Learning Timeline</h2>
+          <p style={{ fontSize: '0.82rem', color: '#4e24a8', marginTop: 2, fontWeight: 600 }}>{timeline.course} · {timeline.unitCount} units</p>
         </div>
         <div className="timeline-health-legend">
           <span className="health on-track">On track</span>
@@ -2870,7 +2877,7 @@ function TimelineView({ timeline }) {
       <div className="timeline-explainer">
         <article>
           <strong>{timeline.actualOverall}% actual mastery</strong>
-          <p>Actual mastery means concepts marked “Knows it” divided by all AP Calculus AB/BC concepts in the tracker.</p>
+          <p>Concepts marked “Knows it” out of all {timeline.course} concepts in scope.</p>
         </article>
         <article>
           <strong>{timeline.expectedOverall}% pacing target</strong>
@@ -2987,27 +2994,48 @@ function TimelineView({ timeline }) {
 }
 
 const CROSS_SECTIONS = [
-  { id: 'disk',      label: 'Disk (rotate around x-axis)',     formula: String.raw`V = \pi\int_a^b [f(x)]^2\,dx` },
-  { id: 'washer',    label: 'Washer (with inner radius g(x))', formula: String.raw`V = \pi\int_a^b \bigl([f(x)]^2-[g(x)]^2\bigr)dx` },
-  { id: 'shell',     label: 'Shell (rotate around y-axis)',    formula: String.raw`V = 2\pi\int_a^b x\,f(x)\,dx` },
-  { id: 'square',    label: 'Cross-section: square',           formula: String.raw`V = \int_a^b [f(x)]^2\,dx` },
-  { id: 'rect',      label: 'Cross-section: rectangle (h=1)',  formula: String.raw`V = \int_a^b 1\cdot f(x)\,dx` },
-  { id: 'semicircle',label: 'Cross-section: semicircle',       formula: String.raw`V = \frac{\pi}{8}\int_a^b [f(x)]^2\,dx` },
-  { id: 'triangle',  label: 'Cross-section: equilateral △',   formula: String.raw`V = \frac{\sqrt{3}}{4}\int_a^b [f(x)]^2\,dx` },
+  { id: 'disk',       label: 'Disk (rotate around x-axis)',     formula: String.raw`V = \pi\int_a^b [f(x)]^2\,dx`,                           crossSection: 'A(x) = π·[f(x)]²' },
+  { id: 'washer',     label: 'Washer (with inner radius g(x))', formula: String.raw`V = \pi\int_a^b \bigl([f(x)]^2-[g(x)]^2\bigr)dx`,        crossSection: 'A(x) = π·([f(x)]² − [g(x)]²)' },
+  { id: 'shell',      label: 'Shell (rotate around y-axis)',    formula: String.raw`V = 2\pi\int_a^b x\,f(x)\,dx`,                           crossSection: '2π·x·f(x) per shell' },
+  { id: 'square',     label: 'Cross-section: square',           formula: String.raw`V = \int_a^b [f(x)]^2\,dx`,                              crossSection: 'A(x) = [f(x)]²' },
+  { id: 'rect',       label: 'Cross-section: rectangle (h=1)',  formula: String.raw`V = \int_a^b 1\cdot f(x)\,dx`,                           crossSection: 'A(x) = f(x)' },
+  { id: 'semicircle', label: 'Cross-section: semicircle',       formula: String.raw`V = \frac{\pi}{8}\int_a^b [f(x)]^2\,dx`,                 crossSection: 'A(x) = (π/8)·[f(x)]²' },
+  { id: 'triangle',   label: 'Cross-section: equilateral △',   formula: String.raw`V = \frac{\sqrt{3}}{4}\int_a^b [f(x)]^2\,dx`,            crossSection: 'A(x) = (√3/4)·[f(x)]²' },
+]
+
+const VOLUME_PRESETS = [
+  { label: 'Sphere', desc: 'y = √(1−x²), [−1, 1], Disk', expr: 'sqrt(1-x^2)', a: -1, b: 1, method: 'disk', exact: '4π/3 ≈ 4.189' },
+  { label: 'Cone',   desc: 'y = x, [0, 1], Disk',          expr: 'x',           a: 0,  b: 1, method: 'disk', exact: 'π/3 ≈ 1.047' },
+  { label: 'Paraboloid', desc: 'y = x², [0, 2], Disk',     expr: 'x^2',         a: 0,  b: 2, method: 'disk', exact: '32π/5 ≈ 20.106' },
+  { label: 'Shell parabola', desc: 'y = x², [0, 1], Shell', expr: 'x^2',        a: 0,  b: 1, method: 'shell', exact: 'π/2 ≈ 1.571' },
+  { label: 'Square cross-sec', desc: 'y = sin(x), [0, π], squares', expr: 'sin(x)', a: 0, b: 3.14159, method: 'square', exact: 'π/2 ≈ 1.571' },
 ]
 
 function VolumeLab({ expression, approxA, approxB }) {
   const [method, setMethod] = useState('disk')
   const [innerExpr, setInnerExpr] = useState('0')
   const [sliceX, setSliceX] = useState(null)
+  const [localExpr, setLocalExpr] = useState(null)
+  const [localA, setLocalA] = useState(null)
+  const [localB, setLocalB] = useState(null)
   const svgW = 560
   const svgH = 280
   const PAD = 40
   const plotW = svgW - PAD * 2
   const plotH = svgH - PAD * 2
 
-  const a = Number.isFinite(approxA) ? approxA : 0
-  const b = Number.isFinite(approxB) && approxB > a ? approxB : a + 2
+  const activeExpr = localExpr !== null ? localExpr : expression
+  const rawA = localA !== null ? localA : approxA
+  const rawB = localB !== null ? localB : approxB
+  const a = Number.isFinite(rawA) ? rawA : 0
+  const b = Number.isFinite(rawB) && rawB > a ? rawB : a + 2
+
+  function applyPreset(preset) {
+    setLocalExpr(preset.expr)
+    setLocalA(preset.a)
+    setLocalB(preset.b)
+    setMethod(preset.method)
+  }
 
   const steps = 200
   const dx = (b - a) / steps
@@ -3016,7 +3044,7 @@ function VolumeLab({ expression, approxA, approxB }) {
   let parseError = false
   let outerFn = null
   let innerFn = null
-  try { outerFn = createEvaluator(expression) } catch { parseError = true }
+  try { outerFn = createEvaluator(activeExpr) } catch { parseError = true }
   try { innerFn = createEvaluator(innerExpr) } catch { parseError = true }
   if (!parseError) {
     for (let i = 0; i <= steps; i++) {
@@ -3047,9 +3075,34 @@ function VolumeLab({ expression, approxA, approxB }) {
   const needsInner = method === 'washer'
   const sec = CROSS_SECTIONS.find((s) => s.id === method) || CROSS_SECTIONS[0]
 
+  // Numerical volume computation
+  const numericalVolume = (() => {
+    if (parseError || !outerFn) return null
+    const N = 1000
+    const vdx = (b - a) / N
+    let total = 0
+    for (let i = 0; i <= N; i++) {
+      const x = a + i * vdx
+      const fy = Math.max(0, outerFn(x))
+      let gy = 0
+      try { gy = Math.max(0, innerFn(x)) } catch { /* ignore */ }
+      let area = 0
+      if (method === 'disk')       area = Math.PI * fy * fy
+      else if (method === 'washer') area = Math.PI * (fy * fy - gy * gy)
+      else if (method === 'shell')  area = 2 * Math.PI * x * fy
+      else if (method === 'square') area = fy * fy
+      else if (method === 'rect')   area = fy
+      else if (method === 'semicircle') area = (Math.PI / 8) * fy * fy
+      else if (method === 'triangle')   area = (Math.sqrt(3) / 4) * fy * fy
+      const w = (i === 0 || i === N) ? 0.5 : 1
+      total += w * area * vdx
+    }
+    return total
+  })()
+
   const hoverX = sliceX !== null ? sliceX : (a + b) / 2
-  const hoverOuterY = (() => { try { return Math.max(0, (outerFn || createEvaluator(expression))(hoverX)) } catch { return 0 } })()
-  const hoverInnerY = (() => { try { return Math.max(0, (innerFn || createEvaluator(innerExpr))(hoverX)) } catch { return 0 } })()
+  const hoverOuterY = (() => { try { return Math.max(0, outerFn(hoverX)) } catch { return 0 } })()
+  const hoverInnerY = (() => { try { return Math.max(0, innerFn(hoverX)) } catch { return 0 } })()
   const sliceSvgX = toSvgX(hoverX)
   const sliceTopY = toSvgY(hoverOuterY)
   const sliceBottomY = toSvgY(0)
@@ -3102,6 +3155,26 @@ function VolumeLab({ expression, approxA, approxB }) {
           <p style={{ fontSize: '0.85rem', color: '#555', marginTop: 4 }}>Uses the bounds <strong>a</strong> and <strong>b</strong> set in the Approximation controls above.</p>
         </div>
       </div>
+
+      <div className="volume-presets">
+        <span className="eyebrow" style={{ alignSelf: 'center' }}>Quick examples:</span>
+        {VOLUME_PRESETS.map((p) => (
+          <button key={p.label} type="button" className="preset-btn" title={p.desc} onClick={() => applyPreset(p)}>
+            {p.label}
+          </button>
+        ))}
+        {localExpr !== null && (
+          <button type="button" className="preset-btn preset-btn-reset" onClick={() => { setLocalExpr(null); setLocalA(null); setLocalB(null) }}>
+            ↩ Use graph inputs
+          </button>
+        )}
+      </div>
+
+      {localExpr !== null && (
+        <div className="volume-local-expr">
+          f(x) = <strong>{localExpr}</strong> &nbsp;·&nbsp; [<strong>{a}</strong>, <strong>{b}</strong>]
+        </div>
+      )}
 
       <div className="volume-controls">
         <label>
@@ -3162,8 +3235,34 @@ function VolumeLab({ expression, approxA, approxB }) {
           )}
           <line x1={sliceSvgX} y1={sliceTopY} x2={sliceSvgX} y2={sliceBottomY} stroke="#e05" strokeWidth="1" strokeDasharray="3 2" opacity="0.7" />
           {renderCrossSection()}
-          <text x={svgW - PAD} y={toSvgY(0) - 6} textAnchor="end" fontSize="11" fill="#555">f(x)={expression}</text>
+          <text x={svgW - PAD} y={toSvgY(0) - 6} textAnchor="end" fontSize="11" fill="#555">f(x)={activeExpr}</text>
         </svg>
+      )}
+
+      {!parseError && numericalVolume !== null && (
+        <div className="volume-result">
+          <div className="volume-result-steps">
+            <div className="volume-step">
+              <span className="step-label">Cross-section</span>
+              <span className="step-value">{sec.crossSection}</span>
+            </div>
+            <div className="volume-step">
+              <span className="step-label">Integrand</span>
+              <DiagnosticMath value={sec.formula} />
+            </div>
+            <div className="volume-step">
+              <span className="step-label">Bounds</span>
+              <span className="step-value">a = {a} &nbsp; b = {b}</span>
+            </div>
+          </div>
+          <div className="volume-result-answer">
+            <span className="volume-result-label">Volume</span>
+            <strong className="volume-result-value">
+              {numericalVolume >= 0 ? numericalVolume.toFixed(4) : '—'} units³
+            </strong>
+            <span className="volume-result-note">Computed numerically (trapezoidal rule, n = 1000)</span>
+          </div>
+        </div>
       )}
     </div>
   )
