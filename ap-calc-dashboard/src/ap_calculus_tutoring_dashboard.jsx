@@ -571,6 +571,39 @@ const referenceGuide = [
       { label: 'cos x series', markdown: String.raw`\cos x = 1-\frac{x^2}{2!}+\frac{x^4}{4!}-\cdots` },
     ],
   },
+  {
+    tag: 'Unit 8',
+    title: 'Volumes — Disk & Washer',
+    items: [
+      { label: 'Disk (x-axis)', markdown: String.raw`V = \pi\int_a^b [f(x)]^2\,dx` },
+      { label: 'Disk (y-axis)', markdown: String.raw`V = \pi\int_c^d [g(y)]^2\,dy` },
+      { label: 'Washer (x-axis)', markdown: String.raw`V = \pi\int_a^b \left([R(x)]^2-[r(x)]^2\right)dx` },
+      { label: 'Washer (y-axis)', markdown: String.raw`V = \pi\int_c^d \left([R(y)]^2-[r(y)]^2\right)dy` },
+      { label: 'Key idea', markdown: String.raw`R = \text{outer radius},\quad r = \text{inner radius}` },
+    ],
+  },
+  {
+    tag: 'Unit 8',
+    title: 'Volumes — Shell Method',
+    items: [
+      { label: 'Shell (x-axis rotation)', markdown: String.raw`V = 2\pi\int_a^b x\,f(x)\,dx` },
+      { label: 'Shell (y-axis rotation)', markdown: String.raw`V = 2\pi\int_c^d y\,g(y)\,dy` },
+      { label: 'Key idea', markdown: String.raw`\text{Shell: } 2\pi \cdot \text{radius} \cdot \text{height} \cdot \Delta x` },
+      { label: 'When to use', markdown: String.raw`\text{Shell when disk/washer requires } y = f(x) \to x = g(y)` },
+    ],
+  },
+  {
+    tag: 'Unit 8',
+    title: 'Volumes — Known Cross-Sections',
+    items: [
+      { label: 'General setup', markdown: String.raw`V = \int_a^b A(x)\,dx \text{ where } A(x) = \text{cross-section area}` },
+      { label: 'Square', markdown: String.raw`A(x) = [f(x)]^2` },
+      { label: 'Rectangle (height h)', markdown: String.raw`A(x) = h \cdot f(x)` },
+      { label: 'Semicircle', markdown: String.raw`A(x) = \tfrac{\pi}{8}[f(x)]^2` },
+      { label: 'Equilateral triangle', markdown: String.raw`A(x) = \tfrac{\sqrt{3}}{4}[f(x)]^2` },
+      { label: 'Right iso. triangle', markdown: String.raw`A(x) = \tfrac{1}{2}[f(x)]^2` },
+    ],
+  },
 ]
 
 const foundationalFactSheets = [
@@ -1522,7 +1555,7 @@ function TheoremMiniPlot({ type }) {
 function APCalculusTutoringDashboard() {
   const saved = typeof window !== 'undefined' ? loadDashboardState() : null
   const initialSnapshot = normalizeDashboardSnapshot(saved)
-  const initialDashboardId = getDashboardIdFromUrl() || initialSnapshot.dashboardId
+  const initialDashboardId = getDashboardIdFromUrl() || initialSnapshot.dashboardId || 'eden-calculus'
   const [activePage, setActivePage] = useState('timeline')
   const [navOpen, setNavOpen] = useState(false)
   const [passwordModal, setPasswordModal] = useState(null)
@@ -1558,6 +1591,16 @@ function APCalculusTutoringDashboard() {
   const lastRemoteSnapshotJsonRef = useRef('')
   const skipNextRemoteWriteRef = useRef(false)
   const remoteReadyRef = useRef(!initialDashboardId || !firebaseEnabled)
+  const lastLocalSaveTimestampRef = useRef(
+    (() => {
+      if (typeof window === 'undefined') return 0
+      const stored = localStorage.getItem('ap-calc-last-save-ts-v6')
+      if (stored) return parseInt(stored, 10)
+      // No timestamp stored yet, but if we have local data treat it as more recent than
+      // any legacy Firestore record that also has no clientTimestamp.
+      return localStorage.getItem(STORAGE_KEY) ? Date.now() : 0
+    })(),
+  )
 
   if (clientIdRef.current == null) {
     clientIdRef.current = getClientId()
@@ -1646,6 +1689,7 @@ function APCalculusTutoringDashboard() {
           return
         }
 
+        const remoteClientTimestamp = remoteDoc?.meta?.clientTimestamp || 0
         const remoteSnapshot = normalizeDashboardSnapshot(remoteDoc, dashboardId)
         const remoteSnapshotJson = JSON.stringify(remoteSnapshot)
 
@@ -1663,8 +1707,12 @@ function APCalculusTutoringDashboard() {
         setSkillRatings(remoteSnapshot.skillRatings)
         setSessions(remoteSnapshot.sessions)
         setMistakes(remoteSnapshot.mistakes)
-        setDiagnosticResponses(remoteSnapshot.diagnosticResponses)
-        setMasteryEndDate(remoteSnapshot.timeline.goalEndDate)
+        // Merge: remote adds questions not yet answered locally; local answers are never overwritten
+        setDiagnosticResponses((prev) => ({ ...remoteSnapshot.diagnosticResponses, ...prev }))
+        // Only accept the remote target date if it is newer than the last local save
+        if (remoteClientTimestamp >= lastLocalSaveTimestampRef.current) {
+          setMasteryEndDate(remoteSnapshot.timeline.goalEndDate)
+        }
         setExpression(remoteSnapshot.graph.expression)
         setXMin(remoteSnapshot.graph.xMin)
         setXMax(remoteSnapshot.graph.xMax)
@@ -1700,12 +1748,16 @@ function APCalculusTutoringDashboard() {
 
     if (dashboardSnapshotJson === lastRemoteSnapshotJsonRef.current) return
 
+    const clientTimestamp = Date.now()
+    lastLocalSaveTimestampRef.current = clientTimestamp
+    localStorage.setItem('ap-calc-last-save-ts-v6', String(clientTimestamp))
+
     let cancelled = false
     setSyncStatus('saving')
 
     syncDashboardToFirebase(dashboardId, {
       state: dashboardSnapshot,
-      meta: { updatedBy: clientIdRef.current },
+      meta: { updatedBy: clientIdRef.current, clientTimestamp },
     })
       .then(() => {
         if (cancelled) return
@@ -2627,6 +2679,8 @@ function APCalculusTutoringDashboard() {
                 yMin={parseScalar(yMin)}
               />
             )}
+
+            <VolumeLab expression={expression} approxA={Number(approxA)} approxB={Number(approxB)} />
           </section>
         </section>
       )}
@@ -2902,21 +2956,216 @@ function TimelineView({ timeline }) {
         {timeline.milestones.length > 0 && (
           <div className="timeline-milestones">
             <strong>Milestones</strong>
-            <div>
-              {timeline.milestones.map((milestone, index) => (
-                <span className="milestone" key={`${milestone.label}-${milestone.date.toISOString()}`} style={{ left: `${milestone.left}%` }}>
-                  <b className={milestone.complete ? 'complete' : ''}>{index + 1}</b>
-                  <em>
-                    {milestone.label}
+            <div className="milestone-track-wrapper">
+              <div className="milestone-track">
+                {timeline.milestones.map((milestone, index) => (
+                  <span
+                    className="milestone"
+                    key={`${milestone.label}-${milestone.date.toISOString()}`}
+                    style={{ left: `${milestone.left}%` }}
+                    title={`${milestone.label} — ${formatCompactDate(milestone.date)}`}
+                  >
+                    <b className={milestone.complete ? 'complete' : ''}>{index + 1}</b>
+                  </span>
+                ))}
+              </div>
+              <div className="milestone-legend">
+                {timeline.milestones.map((milestone, index) => (
+                  <span className={`milestone-legend-item${milestone.complete ? ' complete' : ''}`} key={index}>
+                    <b>{index + 1}</b>
+                    <span>{milestone.label}</span>
                     <small>{formatCompactDate(milestone.date)}</small>
-                  </em>
-                </span>
-              ))}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         )}
       </div>
     </section>
+  )
+}
+
+const CROSS_SECTIONS = [
+  { id: 'disk',      label: 'Disk (rotate around x-axis)',     formula: String.raw`V = \pi\int_a^b [f(x)]^2\,dx` },
+  { id: 'washer',    label: 'Washer (with inner radius g(x))', formula: String.raw`V = \pi\int_a^b \bigl([f(x)]^2-[g(x)]^2\bigr)dx` },
+  { id: 'shell',     label: 'Shell (rotate around y-axis)',    formula: String.raw`V = 2\pi\int_a^b x\,f(x)\,dx` },
+  { id: 'square',    label: 'Cross-section: square',           formula: String.raw`V = \int_a^b [f(x)]^2\,dx` },
+  { id: 'rect',      label: 'Cross-section: rectangle (h=1)',  formula: String.raw`V = \int_a^b 1\cdot f(x)\,dx` },
+  { id: 'semicircle',label: 'Cross-section: semicircle',       formula: String.raw`V = \frac{\pi}{8}\int_a^b [f(x)]^2\,dx` },
+  { id: 'triangle',  label: 'Cross-section: equilateral △',   formula: String.raw`V = \frac{\sqrt{3}}{4}\int_a^b [f(x)]^2\,dx` },
+]
+
+function VolumeLab({ expression, approxA, approxB }) {
+  const [method, setMethod] = useState('disk')
+  const [innerExpr, setInnerExpr] = useState('0')
+  const [sliceX, setSliceX] = useState(null)
+  const svgW = 560
+  const svgH = 280
+  const PAD = 40
+  const plotW = svgW - PAD * 2
+  const plotH = svgH - PAD * 2
+
+  const a = Number.isFinite(approxA) ? approxA : 0
+  const b = Number.isFinite(approxB) && approxB > a ? approxB : a + 2
+
+  const steps = 200
+  const dx = (b - a) / steps
+  const outerPts = []
+  const innerPts = []
+  let parseError = false
+  let outerFn = null
+  let innerFn = null
+  try { outerFn = createEvaluator(expression) } catch { parseError = true }
+  try { innerFn = createEvaluator(innerExpr) } catch { parseError = true }
+  if (!parseError) {
+    for (let i = 0; i <= steps; i++) {
+      const x = a + i * dx
+      try {
+        const fy = outerFn(x)
+        const gy = innerFn(x)
+        outerPts.push([x, Number.isFinite(fy) ? Math.max(0, fy) : 0])
+        innerPts.push([x, Number.isFinite(gy) ? Math.max(0, gy) : 0])
+      } catch {
+        parseError = true
+        break
+      }
+    }
+  }
+
+  const yMax = Math.max(0.01, ...outerPts.map(([, y]) => y)) * 1.15
+  const toSvgX = (x) => PAD + ((x - a) / (b - a)) * plotW
+  const toSvgY = (y) => PAD + plotH - (y / yMax) * plotH
+
+  const outerPath = outerPts.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${toSvgX(x).toFixed(1)},${toSvgY(y).toFixed(1)}`).join(' ')
+  const regionPath = [
+    ...outerPts.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${toSvgX(x).toFixed(1)},${toSvgY(y).toFixed(1)}`),
+    ...[...innerPts].reverse().map(([x, y]) => `L${toSvgX(x).toFixed(1)},${toSvgY(y).toFixed(1)}`),
+    'Z',
+  ].join(' ')
+
+  const needsInner = method === 'washer'
+  const sec = CROSS_SECTIONS.find((s) => s.id === method) || CROSS_SECTIONS[0]
+
+  const hoverX = sliceX !== null ? sliceX : (a + b) / 2
+  const hoverOuterY = (() => { try { return Math.max(0, (outerFn || createEvaluator(expression))(hoverX)) } catch { return 0 } })()
+  const hoverInnerY = (() => { try { return Math.max(0, (innerFn || createEvaluator(innerExpr))(hoverX)) } catch { return 0 } })()
+  const sliceSvgX = toSvgX(hoverX)
+  const sliceTopY = toSvgY(hoverOuterY)
+  const sliceBottomY = toSvgY(0)
+  const sliceInnerY = toSvgY(hoverInnerY)
+
+  function renderCrossSection() {
+    const cx = sliceSvgX
+    const axisY = toSvgY(0)
+    const outerR = Math.abs(sliceBottomY - sliceTopY)
+    const innerR = Math.abs(axisY - sliceInnerY)
+    const rx = Math.max(6, outerR * 0.22)
+    if (method === 'disk') {
+      return <ellipse cx={cx} cy={sliceTopY + outerR / 2} rx={rx} ry={outerR / 2} fill="rgba(78,36,168,0.18)" stroke="#4e24a8" strokeWidth="1.5" />
+    }
+    if (method === 'washer') {
+      return (
+        <g>
+          <ellipse cx={cx} cy={sliceTopY + outerR / 2} rx={rx} ry={outerR / 2} fill="rgba(78,36,168,0.14)" stroke="#4e24a8" strokeWidth="1.5" />
+          <ellipse cx={cx} cy={sliceInnerY + innerR / 2} rx={rx * (innerR / Math.max(outerR, 1))} ry={innerR / 2} fill="white" stroke="#a78bfa" strokeWidth="1" />
+        </g>
+      )
+    }
+    if (method === 'shell') {
+      return <rect x={cx - rx} y={sliceTopY} width={rx * 2} height={outerR} fill="rgba(78,36,168,0.16)" stroke="#4e24a8" strokeWidth="1.5" rx="2" />
+    }
+    if (method === 'square') {
+      const side = outerR
+      return <rect x={cx - side / 2} y={sliceTopY} width={side} height={side} fill="rgba(31,138,76,0.18)" stroke="#1f8a4c" strokeWidth="1.5" />
+    }
+    if (method === 'rect') {
+      return <rect x={cx - outerR * 0.4} y={sliceTopY} width={outerR * 0.8} height={outerR * 0.5} fill="rgba(31,138,76,0.18)" stroke="#1f8a4c" strokeWidth="1.5" />
+    }
+    if (method === 'semicircle') {
+      const r = outerR / 2
+      return <path d={`M${cx - r},${sliceTopY + r} a${r},${r} 0 0,1 ${r * 2},0 Z`} fill="rgba(234,88,12,0.18)" stroke="#ea580c" strokeWidth="1.5" />
+    }
+    if (method === 'triangle') {
+      const h = outerR * (Math.sqrt(3) / 2)
+      return <polygon points={`${cx},${sliceTopY} ${cx - outerR / 2},${sliceTopY + h} ${cx + outerR / 2},${sliceTopY + h}`} fill="rgba(234,88,12,0.18)" stroke="#ea580c" strokeWidth="1.5" />
+    }
+    return null
+  }
+
+  return (
+    <div className="volume-lab">
+      <div className="section-header compact-header" style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(28,49,41,0.12)' }}>
+        <div>
+          <p className="eyebrow">Unit 8 visualizer</p>
+          <h2>Volume of Revolution &amp; Cross-Sections</h2>
+          <p style={{ fontSize: '0.85rem', color: '#555', marginTop: 4 }}>Uses the bounds <strong>a</strong> and <strong>b</strong> set in the Approximation controls above.</p>
+        </div>
+      </div>
+
+      <div className="volume-controls">
+        <label>
+          Method
+          <select value={method} onChange={(e) => setMethod(e.target.value)}>
+            {CROSS_SECTIONS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+          </select>
+        </label>
+        {needsInner && (
+          <label>
+            Inner radius g(x)
+            <input value={innerExpr} onChange={(e) => setInnerExpr(e.target.value)} placeholder="e.g. 0.5*x" />
+          </label>
+        )}
+      </div>
+
+      <div className="volume-formula">
+        <DiagnosticMath value={`\\text{Formula: }${sec.formula}`} displayMode />
+      </div>
+
+      {parseError ? (
+        <div className="error-box">Could not evaluate f(x) on [a, b]. Check the expression above.</div>
+      ) : (
+        <svg
+          className="volume-svg"
+          viewBox={`0 0 ${svgW} ${svgH}`}
+          onMouseMove={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect()
+            const rawX = a + ((e.clientX - rect.left) / rect.width) * (b - a)
+            setSliceX(Math.max(a, Math.min(b, rawX)))
+          }}
+          onMouseLeave={() => setSliceX(null)}
+        >
+          <rect width={svgW} height={svgH} fill="#fafaf8" rx="8" />
+          <line x1={PAD} y1={toSvgY(0)} x2={svgW - PAD} y2={toSvgY(0)} stroke="#1c3129" strokeWidth="1.5" />
+          <line x1={PAD} y1={PAD} x2={PAD} y2={svgH - PAD} stroke="#1c3129" strokeWidth="1.5" />
+          <line x1={toSvgX(a)} y1={PAD} x2={toSvgX(a)} y2={svgH - PAD} stroke="#4e24a8" strokeWidth="1" strokeDasharray="4 3" opacity="0.6" />
+          <line x1={toSvgX(b)} y1={PAD} x2={toSvgX(b)} y2={svgH - PAD} stroke="#4e24a8" strokeWidth="1" strokeDasharray="4 3" opacity="0.6" />
+          <text x={toSvgX(a)} y={svgH - PAD + 14} textAnchor="middle" fontSize="11" fill="#4e24a8">a={a}</text>
+          <text x={toSvgX(b)} y={svgH - PAD + 14} textAnchor="middle" fontSize="11" fill="#4e24a8">b={b}</text>
+          <path d={regionPath} fill="rgba(78,36,168,0.10)" />
+          {needsInner && (
+            <path
+              d={[
+                ...innerPts.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${toSvgX(x).toFixed(1)},${toSvgY(y).toFixed(1)}`),
+                `L${toSvgX(b).toFixed(1)},${toSvgY(0).toFixed(1)}`,
+                `L${toSvgX(a).toFixed(1)},${toSvgY(0).toFixed(1)} Z`,
+              ].join(' ')}
+              fill="white"
+            />
+          )}
+          <path d={outerPath} fill="none" stroke="#4e24a8" strokeWidth="2.5" />
+          {needsInner && (
+            <path
+              d={innerPts.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${toSvgX(x).toFixed(1)},${toSvgY(y).toFixed(1)}`).join(' ')}
+              fill="none" stroke="#a78bfa" strokeWidth="1.5" strokeDasharray="5 3"
+            />
+          )}
+          <line x1={sliceSvgX} y1={sliceTopY} x2={sliceSvgX} y2={sliceBottomY} stroke="#e05" strokeWidth="1" strokeDasharray="3 2" opacity="0.7" />
+          {renderCrossSection()}
+          <text x={svgW - PAD} y={toSvgY(0) - 6} textAnchor="end" fontSize="11" fill="#555">f(x)={expression}</text>
+        </svg>
+      )}
+    </div>
   )
 }
 
