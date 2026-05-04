@@ -280,61 +280,15 @@ const apUnits = [
   },
 ]
 
-const unitDiagnosticLinks = {
-  u1: [{ id: 1, label: 'Limits, continuity, asymptotes' }],
-  u2: [
-    { id: 2, label: 'Derivative definition and tangents' },
-    { id: 3, label: 'Basic differentiation rules' },
-  ],
-  u3: [
-    { id: 4, label: 'Chain rule and composites' },
-    { id: 5, label: 'Implicit and inverse derivatives' },
-    { id: 6, label: 'Inverse trig and logarithmic differentiation' },
-  ],
-  u4: [
-    { id: 7, label: 'Motion derivatives' },
-    { id: 8, label: 'Related rates' },
-    { id: 9, label: 'Linearization and differentials' },
-    { id: 10, label: "L'Hopital and indeterminate forms" },
-  ],
-  u5: [
-    { id: 11, label: 'MVT, EVT, critical points' },
-    { id: 12, label: 'Increasing, extrema, concavity' },
-    { id: 13, label: 'Curve sketching and optimization' },
-  ],
-  u6: [
-    { id: 14, label: 'Antiderivatives and IVPs' },
-    { id: 15, label: 'Riemann sums and trapezoids' },
-    { id: 16, label: 'FTC and accumulation' },
-    { id: 17, label: 'Net change and average value' },
-    { id: 18, label: 'Substitution' },
-    { id: 24, label: 'Integration by parts' },
-    { id: 25, label: 'Partial fractions and improper integrals' },
-  ],
-  u7: [
-    { id: 19, label: 'Separable differential equations' },
-    { id: 20, label: "Euler's method and logistic growth" },
-  ],
-  u8: [
-    { id: 17, label: 'Average value and net change' },
-    { id: 21, label: 'Area between curves' },
-    { id: 22, label: 'Volumes' },
-    { id: 23, label: 'Arc length' },
-  ],
-  u9: [
-    { id: 26, label: 'Parametric equations' },
-    { id: 27, label: 'Polar area' },
-    { id: 28, label: 'Vector-valued motion' },
-  ],
-  u10: [
-    { id: 29, label: 'Sequences and geometric series' },
-    { id: 30, label: 'Convergence tests' },
-    { id: 31, label: 'Alternating series error' },
-    { id: 32, label: 'Taylor polynomials' },
-    { id: 33, label: 'Power series convergence' },
-    { id: 34, label: 'Series manipulation' },
-  ],
-}
+const unitDiagnosticLinks = diagnosticQuestions
+  .filter((question) => question.difficulty === 'easy')
+  .reduce((links, question) => {
+    const hardQuestion = diagnosticQuestions.find((candidate) => candidate.concept === question.concept && candidate.difficulty === 'hard')
+    return {
+      ...links,
+      [question.unitId]: [...(links[question.unitId] || []), { id: question.id, hardId: hardQuestion?.id, label: question.concept }],
+    }
+  }, {})
 
 const defaultStudent = {
   name: '',
@@ -1357,11 +1311,6 @@ function renderDiagnosticLatex(value, displayMode = false) {
   })
 }
 
-function looksLikeDiagnosticMath(value) {
-  const text = String(value)
-  return /[\^_=<>/]|sqrt|pi|∞|≤|≥|\b(?:log|sin|cos|tan|cot|csc|sec)\b/.test(text)
-}
-
 function DiagnosticMath({ value, displayMode = false }) {
   const html = renderDiagnosticLatex(value, displayMode)
 
@@ -1373,7 +1322,7 @@ function DiagnosticRichText({ value }) {
   const parts = text.split(/(\$[^$]+\$)/g)
 
   if (parts.length === 1) {
-    return looksLikeDiagnosticMath(text) ? <DiagnosticMath value={text} /> : <>{prettyDiagnosticText(text)}</>
+    return <>{prettyDiagnosticText(text)}</>
   }
 
   return (
@@ -1386,6 +1335,20 @@ function DiagnosticRichText({ value }) {
       })}
     </>
   )
+}
+
+function studentDiagnosticPrompt(value) {
+  return String(value)
+    .replace(/\bBC Only\.\s*/g, '')
+    .replace(/\bEasy:\s*/g, 'Part A. ')
+    .replace(/\bHard:\s*/g, 'Part B. ')
+}
+
+function studentDiagnosticChoice(value) {
+  return String(value)
+    .replace(/\bEasy:\s*/g, '')
+    .replace(/;\s*Hard:\s*/g, '; ')
+    .replace(/\bHard:\s*/g, '')
 }
 
 function FormulaItem({ item }) {
@@ -1452,29 +1415,33 @@ function FactSheetCard({ sheet }) {
 function DiagnosticQuestionCard({ question, selectedAnswer, onSelect }) {
   const hasChoices = Array.isArray(question.choices) && question.choices.length > 0
   const sourceClass = question.source === 'File 1' ? 'source-blue' : question.source === 'File 2' ? 'source-green' : 'source-guide'
-  const selectedIsCorrect = hasChoices && selectedAnswer === question.answer
 
   return (
     <article className="diagnostic-card" id={`diagnostic-question-${question.id}`}>
       <div className="diagnostic-card-header">
         <span className={`question-number-badge ${sourceClass}`}>{question.id}</span>
         <strong>Question {question.id}</strong>
+        <details className="diagnostic-hint">
+          <summary aria-label={`Show hint for question ${question.id}`}>i</summary>
+          <div>
+            <b>Concept:</b> {question.concept}
+            <p>{question.hint}</p>
+          </div>
+        </details>
       </div>
-      <p className="diagnostic-concept">{question.concept}</p>
       <p className="diagnostic-prompt">
-        <DiagnosticRichText value={question.prompt} />
+        <DiagnosticRichText value={studentDiagnosticPrompt(question.prompt)} />
       </p>
       {hasChoices ? (
         <div className="diagnostic-choices">
           {question.choices.map((choice, index) => {
             const letter = String.fromCharCode(97 + index)
             const isSelected = selectedAnswer === letter
-            const correctnessClass = isSelected ? (selectedIsCorrect ? 'correct' : 'incorrect') : ''
 
             return (
-              <button className={correctnessClass} key={choice} type="button" onClick={() => onSelect(question.id, letter)}>
+              <button className={isSelected ? 'selected' : ''} key={choice} type="button" onClick={() => onSelect(question.id, letter)}>
                 <span>{letter}.</span>
-                <em>{prettyDiagnosticText(choice)}</em>
+                <em>{prettyDiagnosticText(studentDiagnosticChoice(choice))}</em>
               </button>
             )
           })}
@@ -1492,8 +1459,8 @@ function DiagnosticQuestionCard({ question, selectedAnswer, onSelect }) {
         </div>
       )}
       {hasChoices && selectedAnswer && (
-        <p className={`diagnostic-feedback ${selectedIsCorrect ? 'correct' : 'incorrect'}`}>
-          {selectedIsCorrect ? 'Correct.' : 'Not quite. Try another answer or review this concept.'}
+        <p className="diagnostic-feedback selected">
+          Answer saved. Results and worked steps are reviewed in Tutor/Admin.
         </p>
       )}
       {!hasChoices && selectedAnswer && (
@@ -1602,9 +1569,21 @@ function DiagnosticAnswerKeyItem({ question }) {
       </summary>
       <div className="answer-detail-body">
         {hasChoices ? (
-          <p>
-            <b>Correct answer:</b> {question.answer}. <DiagnosticRichText value={selectedChoice} />
-          </p>
+          <>
+            <p>
+              <b>Correct answer:</b> {question.answer}. <DiagnosticRichText value={selectedChoice} />
+            </p>
+            <div className="answer-choice-review">
+              {question.choices.map((choice, index) => {
+                const letter = String.fromCharCode(97 + index)
+                return (
+                  <span className={letter === question.answer ? 'correct' : ''} key={`${question.id}-${letter}`}>
+                    <b>{letter}.</b> <DiagnosticRichText value={choice} />
+                  </span>
+                )
+              })}
+            </div>
+          </>
         ) : (
           <p>
             <b>Problem:</b> <DiagnosticRichText value={question.prompt} />
@@ -1951,29 +1930,35 @@ function APCalculusTutoringDashboard() {
 
     if (dashboardSnapshotJson === lastRemoteSnapshotJsonRef.current) return
 
-    const clientTimestamp = Date.now()
-    lastLocalSaveTimestampRef.current = clientTimestamp
-    localStorage.setItem('ap-calc-last-save-ts-v6', String(clientTimestamp))
-
     let cancelled = false
-    setSyncStatus('saving')
 
-    syncDashboardToFirebase(dashboardId, {
-      state: dashboardSnapshot,
-      meta: { updatedBy: clientIdRef.current, clientTimestamp },
-    })
-      .then(() => {
-        if (cancelled) return
-        lastRemoteSnapshotJsonRef.current = dashboardSnapshotJson
-        setSyncStatus('live')
+    const timer = setTimeout(() => {
+      if (cancelled) return
+
+      const clientTimestamp = Date.now()
+      lastLocalSaveTimestampRef.current = clientTimestamp
+      localStorage.setItem('ap-calc-last-save-ts-v6', String(clientTimestamp))
+
+      setSyncStatus('saving')
+
+      syncDashboardToFirebase(dashboardId, {
+        state: dashboardSnapshot,
+        meta: { updatedBy: clientIdRef.current, clientTimestamp },
       })
-      .catch(() => {
-        if (cancelled) return
-        setSyncStatus('error')
-      })
+        .then(() => {
+          if (cancelled) return
+          lastRemoteSnapshotJsonRef.current = dashboardSnapshotJson
+          setSyncStatus('live')
+        })
+        .catch(() => {
+          if (cancelled) return
+          setSyncStatus('error')
+        })
+    }, 1000)
 
     return () => {
       cancelled = true
+      clearTimeout(timer)
     }
   }, [dashboardId, dashboardSnapshot, dashboardSnapshotJson])
 
@@ -2142,6 +2127,10 @@ function APCalculusTutoringDashboard() {
       ...current,
       { id: `session-${Date.now()}`, date: new Date().toISOString().slice(0, 10), focus: '', win: '', next: '' },
     ])
+  }
+
+  function deleteSession(id) {
+    setSessions((current) => current.filter((session) => session.id !== id))
   }
 
   function updateMistake(id, field, value) {
@@ -2489,10 +2478,13 @@ function APCalculusTutoringDashboard() {
             <div className="log-grid">
               {sessions.map((session) => (
                 <article className="log-card" key={session.id}>
-                  <label>
-                    Date
-                    <input type="date" value={session.date} onChange={(event) => updateSession(session.id, 'date', event.target.value)} />
-                  </label>
+                  <div className="log-card-header">
+                    <label>
+                      Date
+                      <input type="date" value={session.date} onChange={(event) => updateSession(session.id, 'date', event.target.value)} />
+                    </label>
+                    <button className="mini-button delete-button" type="button" onClick={() => deleteSession(session.id)}>Delete</button>
+                  </div>
                   <label>
                     Focus
                     <input value={session.focus} onChange={(event) => updateSession(session.id, 'focus', event.target.value)} />
@@ -3014,11 +3006,6 @@ function APCalculusTutoringDashboard() {
             <p>
               Goal: {student.course}, target AP score {student.targetScore}
             </p>
-            <div className="metric-grid parent-metrics">
-              <DashboardCard title="Readiness status" value={metrics.readinessStatus} caption="Overall AP preparation signal." />
-              <DashboardCard title="Practice benchmark" value={`${clampPercent(student.recentScore)}%`} caption="Most recent scored practice." />
-              <DashboardCard title="At-home practice completion" value={`${clampPercent(student.homeworkCompletion)}%`} caption="Consistency between sessions." />
-            </div>
             <h3>Current Priority Areas</h3>
             <div className="priority-grid">
               {metrics.priorityUnits.length > 0 ? (
@@ -3146,7 +3133,7 @@ function TimelineView({ timeline, onOpenDiagnosticQuestion }) {
                       <b>Diagnostic:</b>
                       {diagnosticLinks.map((link) => (
                         <button key={`${row.unit.id}-${link.id}`} type="button" onClick={() => onOpenDiagnosticQuestion(link.id)}>
-                          Q{link.id}: {link.label}
+                          Q{link.id}{link.hardId ? `/Q${link.hardId}` : ''}: {link.label}
                         </button>
                       ))}
                     </div>

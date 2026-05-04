@@ -240,6 +240,25 @@ textarea {
   width: fit-content;
 }
 
+.log-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.log-card-header label {
+  flex: 1;
+}
+
+.delete-button {
+  background: rgba(200, 50, 50, 0.08);
+  color: #b03030;
+  border-color: rgba(200, 50, 50, 0.2);
+  flex-shrink: 0;
+}
+
 .skill-card {
   display: grid;
   gap: 12px;
@@ -1800,6 +1819,57 @@ textarea {
   gap: 10px;
 }
 
+.diagnostic-hint {
+  position: relative;
+  margin-left: auto;
+}
+
+.diagnostic-hint summary {
+  display: inline-grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 1px solid rgba(28, 49, 41, 0.16);
+  border-radius: 999px;
+  color: #5c3a12;
+  background: #fff3d5;
+  font-size: 0.9rem;
+  font-weight: 1000;
+  cursor: pointer;
+  list-style: none;
+}
+
+.diagnostic-hint summary::-webkit-details-marker {
+  display: none;
+}
+
+.diagnostic-hint div {
+  position: absolute;
+  top: 38px;
+  right: 0;
+  z-index: 20;
+  width: min(320px, 76vw);
+  padding: 12px;
+  border: 1px solid rgba(138, 79, 22, 0.22);
+  border-radius: 16px;
+  color: #32443a;
+  background: #fffdf7;
+  box-shadow: 0 16px 36px rgba(42, 35, 20, 0.18);
+}
+
+.diagnostic-hint b {
+  color: #5c3a12;
+  font-size: 0.82rem;
+}
+
+.diagnostic-hint p {
+  margin: 6px 0 0;
+  color: #526358;
+  font-size: 0.86rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .question-number-badge {
   display: inline-grid;
   min-width: 34px;
@@ -1864,6 +1934,11 @@ textarea {
   background: #e2ecdc;
 }
 
+.diagnostic-choices button.selected {
+  border-color: rgba(51, 74, 192, 0.42);
+  background: #e6ebff;
+}
+
 .diagnostic-choices button.correct {
   border-color: rgba(31, 138, 76, 0.48);
   background: #dff1e5;
@@ -1903,6 +1978,11 @@ textarea {
 .diagnostic-feedback.incorrect {
   color: #8f1d27;
   background: #ffe5e5;
+}
+
+.diagnostic-feedback.selected {
+  color: #33427c;
+  background: #e6ebff;
 }
 
 .diagnostic-test-toolbar {
@@ -1996,6 +2076,25 @@ textarea {
   border: 1px solid rgba(28, 49, 41, 0.12);
   border-radius: 16px;
   background: #f0f5ee;
+}
+
+.answer-choice-review {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0;
+}
+
+.answer-choice-review span {
+  padding: 7px 9px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #46584e;
+}
+
+.answer-choice-review span.correct {
+  border: 1px solid rgba(31, 138, 76, 0.3);
+  color: #11633d;
+  background: #dff1e5;
 }
 
 .answer-key-detail summary {
