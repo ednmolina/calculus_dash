@@ -1282,24 +1282,49 @@ function toDiagnosticLatex(value) {
     .replace(/>=/g, '\\ge')
     .replace(/\+-/g, '\\pm')
     .replace(/\*/g, '\\cdot ')
+    // derivative fractions must come before general fraction rules
+    .replace(/d\^2y\/dx\^2/g, '\\frac{d^{2}y}{dx^{2}}')
+    .replace(/dy\/dx/g, '\\frac{dy}{dx}')
+    .replace(/dy\/dt/g, '\\frac{dy}{dt}')
+    .replace(/dx\/dt/g, '\\frac{dx}{dt}')
+    .replace(/d\/dx/g, '\\frac{d}{dx}')
+    .replace(/d\/dt/g, '\\frac{d}{dt}')
+    .replace(/d\/dy/g, '\\frac{d}{dy}')
     .replace(/\bsqrt\(([^)]+)\)/g, '\\sqrt{$1}')
     .replace(/\bsqrt(\d+)/g, '\\sqrt{$1}')
+    // exponents: (expr) form first, then numeric, then letter
     .replace(/([A-Za-z0-9)}])\s*\^\s*\(([^)]+)\)/g, '$1^{$2}')
     .replace(/([A-Za-z0-9)}])\s*\^\s*(-?\d+)/g, '$1^{$2}')
+    .replace(/([A-Za-z0-9)}])\s*\^\s*([A-Za-z][A-Za-z0-9]*)/g, '$1^{$2}')
     .replace(/\bf\^-1\b/g, 'f^{-1}')
     .replace(/\blog_(\d+)\(/g, '\\log_{$1}(')
+    .replace(/\bln\b/g, '\\ln')
+    .replace(/\barcsin\b/g, '\\arcsin')
+    .replace(/\barccos\b/g, '\\arccos')
+    .replace(/\barctan\b/g, '\\arctan')
     .replace(/\bsin\b/g, '\\sin')
     .replace(/\bcos\b/g, '\\cos')
     .replace(/\btan\b/g, '\\tan')
     .replace(/\bcot\b/g, '\\cot')
     .replace(/\bcsc\b/g, '\\csc')
     .replace(/\bsec\b/g, '\\sec')
+    .replace(/\blim\b/g, '\\lim')
+    .replace(/->/g, '\\to')
 
+  // fraction patterns — most specific first
   latex = latex
-    .replace(/^\(([^()]+)\)\/\(([^()]+)\)$/g, '\\frac{$1}{$2}')
+    // (a)/(b)^n  e.g. (x^2-1)/(x-1)^2
+    .replace(/\(([^()]+)\)\/\(([^()]+)\)(\^[{]?[^}\s,]+[}]?|\^-?\d+)?/g, (_, n, d, exp) =>
+      `\\frac{${n}}{${d}}${exp ?? ''}`)
+    // whole-string simple fraction a/b
     .replace(/^([^/\s]+)\/([^/\s]+)$/g, '\\frac{$1}{$2}')
-    .replace(/(\d+)pi\/(\d+)/g, '\\frac{$1\\pi}{$2}')
-    .replace(/(?<![A-Za-z])pi\/(\d+)/g, '\\frac{\\pi}{$1}')
+    // a/(b) inline  e.g. 1/(x+1)^2
+    .replace(/([A-Za-z\d]+)\/\(([^()]+)\)(\^[{]?[^}\s,]+[}]?|\^-?\d+)?/g, (_, n, d, exp) =>
+      `\\frac{${n}}{${d}}${exp ?? ''}`)
+    // simple numeric fraction inline  e.g. 1/6, 3/2
+    .replace(/(?<![A-Za-z\d])([-]?\d+)\/(\d+)(?![A-Za-z\d])/g, '\\frac{$1}{$2}')
+    .replace(/(\d+)\\pi\/(\d+)/g, '\\frac{$1\\pi}{$2}')
+    .replace(/(?<![A-Za-z])\\pi\/(\d+)/g, '\\frac{\\pi}{$1}')
 
   return latex
 }
@@ -1318,12 +1343,36 @@ function DiagnosticMath({ value, displayMode = false }) {
   return <span className="diagnostic-math" dangerouslySetInnerHTML={{ __html: html }} />
 }
 
+// Detects math-dense spans in prose text and renders them via KaTeX.
+// Covers: (a)/(b)^n fractions, exponents, sqrt, f'(x)/f''(x), dy/dx, pi, infinity, ->
+const INLINE_MATH_RE =
+  /(?:\([^()]*\)\s*\/\s*\([^()]*\)(?:\s*\^[({]?[^)\s,]+[)}]?)?|\([^()]*\)\s*\^[({]?[^)\s,]+[)}]?|[A-Za-z\d._]+\s*\^[({]?[A-Za-z\d.+\-*/^]+[)}]?|\bsqrt\s*\([^)]+\)|[A-Za-z]''\s*\([^)]*\)|[A-Za-z]'\s*\([^)]*\)|d[yxf]?\/d[xyzt](?:\^2)?|\bpi\b|\binfinity\b|->|[A-Za-z\d]+\/[A-Za-z\d()^{}]+)/g
+
+function DiagnosticMixedText({ value }) {
+  const text = String(value)
+  const parts = []
+  let lastIndex = 0
+  const inlineMathRe = new RegExp(INLINE_MATH_RE.source, 'g')
+  let match
+  while ((match = inlineMathRe.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(<span key={lastIndex}>{prettyDiagnosticText(text.slice(lastIndex, match.index))}</span>)
+    }
+    parts.push(<DiagnosticMath key={match.index} value={match[0]} />)
+    lastIndex = match.index + match[0].length
+  }
+  if (lastIndex < text.length) {
+    parts.push(<span key={lastIndex}>{prettyDiagnosticText(text.slice(lastIndex))}</span>)
+  }
+  return <>{parts}</>
+}
+
 function DiagnosticRichText({ value }) {
   const text = String(value)
   const parts = text.split(/(\$[^$]+\$)/g)
 
   if (parts.length === 1) {
-    return <>{prettyDiagnosticText(text)}</>
+    return <DiagnosticMixedText value={text} />
   }
 
   return (
@@ -1332,7 +1381,7 @@ function DiagnosticRichText({ value }) {
         if (part.startsWith('$') && part.endsWith('$')) {
           return <DiagnosticMath key={`${part}-${index}`} value={part.slice(1, -1)} />
         }
-        return <span key={`${part}-${index}`}>{prettyDiagnosticText(part)}</span>
+        return <DiagnosticMixedText key={`${part}-${index}`} value={part} />
       })}
     </>
   )
@@ -1442,7 +1491,7 @@ function DiagnosticQuestionCard({ question, selectedAnswer, onSelect }) {
             return (
               <button className={isSelected ? 'selected' : ''} key={choice} type="button" onClick={() => onSelect(question.id, letter)}>
                 <span>{letter}.</span>
-                <em>{prettyDiagnosticText(studentDiagnosticChoice(choice))}</em>
+                <em><DiagnosticRichText value={studentDiagnosticChoice(choice)} /></em>
               </button>
             )
           })}
