@@ -329,6 +329,18 @@ function genericProblem(unitId, concept, index, difficulty) {
     : [`Which idea is most central to ${concept}?`, 'Apply the named rule with its required conditions.', ['Ignore conditions', 'Use unrelated algebra only', 'Estimate randomly'], 'Use the definition or rule attached to the skill.', 'Concept questions test when a method is valid.']
 }
 
+const questionOverrides = {
+  10: ['For f(x)=(x+1)/((x-3)(x+2)), find the vertical asymptotes.', 'x = 3 and x = -2', ['x = -1 only', 'x = 3 only', 'x = -2 only'], 'Set the factored denominator equal to zero and check that no factor cancels with the numerator.', 'Vertical asymptotes come from uncanceled denominator zeros.'],
+  56: ['Evaluate lim as x -> 0 of (e^(2x)-1)/x.', '2', ['1', '0', 'Does not exist'], 'Direct substitution gives 0/0, so L’Hopital gives lim 2e^(2x)/1 = 2.', 'Confirm the indeterminate form before applying L’Hopital.'],
+  72: ['For f\'(x)=(x-1)(x+2) and f(0)=3, which sign pattern correctly describes f?', 'increasing on (-infinity,-2) and (1,infinity), decreasing on (-2,1)', ['decreasing on (-infinity,-2) and (1,infinity)', 'increasing only on (-2,1)', 'decreasing for all x'], 'Make a sign chart for f\'. The product is positive outside the roots and negative between them.', 'Curve sketching depends on derivative sign intervals, not isolated test points alone.'],
+  86: ['Evaluate integral from 1 to 3 of (4x-1) dx using an antiderivative.', '14', ['10', '16', '8'], 'An antiderivative is 2x^2-x. Evaluate: (18-3)-(2-1)=15-1=14.', 'FTC Part 2 requires F(b)-F(a), not F(a)-F(b).'],
+  99: ['Decompose (7x+1)/((x-1)(x+2)) into A/(x-1)+B/(x+2). What are A and B?', 'A=8/3, B=13/3', ['A=13/3, B=8/3', 'A=2, B=5', 'A=3, B=4'], 'Clear denominators: 7x+1=A(x+2)+B(x-1). Then A+B=7 and 2A-B=1, so A=8/3 and B=13/3.', 'Clear denominators before matching coefficients.'],
+  117: ['Use Euler’s method with h=0.25 for y\'=x+y, y(0)=2. What is the estimate for y(0.5)?', '3.1875', ['2.5', '2.75', '3.25'], 'First slope at (0,2) is 2, so y(0.25)=2+0.25(2)=2.5. Next slope is 0.25+2.5=2.75, so y(0.5)=2.5+0.25(2.75)=3.1875.', 'Euler uses the slope at the current point, then steps forward.'],
+  125: ['Find the area between y=x+2 and y=x^2 from x=0 to x=2.', '10/3', ['8/3', '4', '2'], 'On [0,2], the line is above the parabola. Integrate x+2-x^2 from 0 to 2 to get 10/3.', 'Use top minus bottom, not absolute values after integrating.'],
+  132: ['Find the volume when the region between y=x and y=x^2 on [0,1] is rotated about the x-axis.', '2pi/15', ['pi/15', '2pi/5', 'pi/6'], 'Use washers: V=pi integral from 0 to 1 of (x^2 - x^4) dx = pi(1/3-1/5)=2pi/15.', 'Washer method uses outer radius squared minus inner radius squared.'],
+  178: ['Use the degree 3 Maclaurin polynomial for sin x to approximate sin(0.2).', '0.198667 approximately', ['0.200000 approximately', '0.196000 approximately', '1.221333 approximately'], 'Use sin x ≈ x - x^3/6. At x=0.2, 0.2 - 0.008/6 = 0.198666...', 'Use the correct Maclaurin series for the function, not the e^x pattern.'],
+}
+
 function rotateChoices(choices, seed) {
   const offset = seed % choices.length
   return choices.slice(offset).concat(choices.slice(0, offset))
@@ -336,14 +348,15 @@ function rotateChoices(choices, seed) {
 
 function makeQuestion(row, conceptIndex, difficulty) {
   const [unitId, unit, concept] = row
-  const source = handcrafted[concept]?.[difficulty === 'easy' ? 0 : 1] || genericProblem(unitId, concept, conceptIndex, difficulty)
+  const id = conceptIndex * 2 + (difficulty === 'easy' ? 1 : 2)
+  const source = questionOverrides[id] || handcrafted[concept]?.[difficulty === 'easy' ? 0 : 1] || genericProblem(unitId, concept, conceptIndex, difficulty)
   const [prompt, correct, distractors, solution, gotcha] = source
   const rawChoices = [correct, ...distractors]
   const choices = rotateChoices([...new Set(rawChoices)], conceptIndex + (difficulty === 'hard' ? 2 : 0))
   if (choices.length !== 4) throw new Error(`Invalid diagnostic choices for ${concept}: ${rawChoices.join(' | ')}`)
 
   return {
-    id: conceptIndex * 2 + (difficulty === 'easy' ? 1 : 2),
+    id,
     source: 'AP Guide',
     unitId,
     unit,

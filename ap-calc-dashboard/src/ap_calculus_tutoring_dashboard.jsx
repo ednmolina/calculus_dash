@@ -7,6 +7,7 @@ import { firebaseEnabled, subscribeToDashboard, syncDashboardToFirebase } from '
 const STORAGE_KEY = 'ap-calc-tutoring-dashboard-v6'
 const CLIENT_ID_KEY = 'ap-calc-dashboard-client-id'
 const DASHBOARD_QUERY_PARAM = 'dashboard'
+const orderedDiagnosticQuestions = [...diagnosticQuestions].sort((a, b) => a.id - b.id)
 
 const statusDateFields = {
   taught: 'taughtAt',
@@ -280,10 +281,10 @@ const apUnits = [
   },
 ]
 
-const unitDiagnosticLinks = diagnosticQuestions
+const unitDiagnosticLinks = orderedDiagnosticQuestions
   .filter((question) => question.difficulty === 'easy')
   .reduce((links, question) => {
-    const hardQuestion = diagnosticQuestions.find((candidate) => candidate.concept === question.concept && candidate.difficulty === 'hard')
+    const hardQuestion = orderedDiagnosticQuestions.find((candidate) => candidate.concept === question.concept && candidate.difficulty === 'hard')
     return {
       ...links,
       [question.unitId]: [...(links[question.unitId] || []), { id: question.id, hardId: hardQuestion?.id, label: question.concept }],
@@ -1473,7 +1474,7 @@ function DiagnosticQuestionCard({ question, selectedAnswer, onSelect }) {
 }
 
 function buildDiagnosticSummary(responses) {
-  const answeredQuestions = diagnosticQuestions.filter((question) => responses[question.id])
+  const answeredQuestions = orderedDiagnosticQuestions.filter((question) => responses[question.id])
   const correctQuestions = answeredQuestions.filter((question) =>
     Array.isArray(question.choices) && question.choices.length > 0 ? responses[question.id] === question.answer : responses[question.id] === 'solved',
   )
@@ -1506,7 +1507,7 @@ function DiagnosticResultsSummary({ responses, summary, onClear }) {
         )}
       </div>
       <div className="metric-grid diagnostic-metrics">
-        <DashboardCard title="Answered" value={`${summary.answered}/${diagnosticQuestions.length}`} caption="Saved locally in this browser." />
+        <DashboardCard title="Answered" value={`${summary.answered}/${orderedDiagnosticQuestions.length}`} caption="Saved locally in this browser." />
         <DashboardCard title="Solved so far" value={`${summary.correct}/${summary.answered || 0}`} caption="Multiple choice counts correct; written items count solved." />
         <DashboardCard title="Current score" value={`${summary.score}%`} caption="Solved or correct divided by answered." />
       </div>
@@ -1612,7 +1613,7 @@ function DiagnosticAnswerKey() {
         <span className="syntax-note">Do not show this section to the student.</span>
       </div>
       <div className="answer-key-list">
-        {diagnosticQuestions.map((question) => (
+        {orderedDiagnosticQuestions.map((question) => (
           <DiagnosticAnswerKeyItem key={question.id} question={question} />
         ))}
       </div>
@@ -2689,19 +2690,19 @@ function APCalculusTutoringDashboard() {
                 <h2>AP Calculus Concept Diagnostic</h2>
               </div>
               <p className="syntax-note">
-                {diagnosticSummary.answered}/{diagnosticQuestions.length} answered. Answers save automatically in this browser.
+                {diagnosticSummary.answered}/{orderedDiagnosticQuestions.length} answered. Answers save automatically in this browser.
               </p>
             </div>
             <div className="diagnostic-test-toolbar">
               <span>
-                Saved answers: {diagnosticSummary.answered}/{diagnosticQuestions.length}
+                Saved answers: {diagnosticSummary.answered}/{orderedDiagnosticQuestions.length}
               </span>
               <button className="mini-button fit-button" type="button" onClick={() => setDiagnosticResponses({})}>
                 Clear answer choices
               </button>
             </div>
             <div className="diagnostic-grid">
-              {diagnosticQuestions.map((question) => (
+              {orderedDiagnosticQuestions.map((question) => (
                 <DiagnosticQuestionCard
                   key={question.id}
                   onSelect={selectDiagnosticAnswer}
