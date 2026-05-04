@@ -196,7 +196,7 @@ function genericProblem(unitId, concept, index, difficulty) {
       ? ['Parametric arc length uses which integrand?', 'sqrt((dx/dt)^2+(dy/dt)^2)', ['sqrt(1+(dy/dx)^2)', 'dy/dx', 'x(t)y(t)'], 'Use component rates with respect to t.', 'Parametric arc length is not the Cartesian formula unless converted.']
       : ['For x=t, y=t on [0,3], parametric arc length is what?', '3sqrt(2)', ['3', 'sqrt(2)', '6'], 'Speed is sqrt(1^2+1^2), integrated over length 3.', 'Use vector speed.']
     if (c.includes('polar arc length')) return hard
-      ? ['Polar arc length uses which integrand?', 'sqrt(r^2+(dr/dtheta)^2)', ['sqrt(1+(r\')^2)', '1/2 r^2', 'r only'], 'Polar arc length combines r and dr/dtheta.', 'Do not use the polar area formula.']
+      ? ['Polar arc length uses which integrand, where r\' means dr/dtheta?', 'sqrt(r^2 + r\'^2)', ['sqrt(1 + r\'^2)', '1/2 r^2', 'r only'], 'Polar arc length combines r and dr/dtheta as sqrt(r^2 + r\'^2).', 'Do not use the polar area formula.']
       : ['For r=2, 0<=theta<=pi, polar arc length is what?', '2pi', ['pi', '4pi', '2'], 'A circle radius 2 over angle pi has length r theta.', 'Constant r simplifies arc length.']
     if (c.includes('arc length')) return hard
       ? ['Set up arc length for y=ln(cos x) on [0,pi/4].', 'integral from 0 to pi/4 of sqrt(1+tan^2 x) dx', ['integral tan x dx', 'integral sqrt(1-tan^2 x) dx', 'integral ln(cos x) dx'], 'Use sqrt(1+(y\')^2) with y\'=-tan x.', 'Set up only when requested.']
@@ -271,8 +271,8 @@ function genericProblem(unitId, concept, index, difficulty) {
       ? ['Maclaurin series are Taylor series centered where?', '0', ['1', 'a', 'infinity'], 'Maclaurin means center 0.', 'Taylor has any center; Maclaurin center is 0.']
       : ['Which is a Maclaurin series fact?', 'It is centered at x=0', ['It never has a remainder', 'It only works for polynomials', 'It is centered at x=1'], 'Maclaurin is Taylor at 0.', 'Know the vocabulary.']
     if (c.includes('taylor') || c.includes('maclaurin')) return hard
-      ? ['Degree 3 Maclaurin polynomial for sin x is what?', 'x - x^3/6', ['1+x+x^2/2+x^3/6', 'x+x^3/6', '1-x^2/2'], 'Use the sin x series.', 'Do not use the e^x pattern for sin x.']
-      : ['Degree 3 Maclaurin polynomial for e^x is what?', '1+x+x^2/2+x^3/6', ['x-x^3/6', '1-x^2/2', 'x+x^2+x^3'], 'Use the e^x series.', 'Include factorial denominators.']
+      ? ['Degree 3 Maclaurin polynomial for sin x is what?', 'x - (x^3)/6', ['1 + x + (x^2)/2 + (x^3)/6', 'x + (x^3)/6', '1 - (x^2)/2'], 'Use the sin x series: x - x^3/3!.', 'Do not use the e^x pattern for sin x.']
+      : ['Degree 3 Maclaurin polynomial for e^x is what?', '1 + x + (x^2)/2 + (x^3)/6', ['x - (x^3)/6', '1 - (x^2)/2', 'x + x^2 + x^3'], 'Use the e^x series: 1 + x + x^2/2! + x^3/3!.', 'Include factorial denominators.']
     if (c.includes('lagrange')) return hard
       ? ['For e^x on [0,0.1], a Lagrange error bound uses which derivative size?', 'max of |e^x| on the interval', ['only f(0)', 'only f(0.1)-f(0)', 'the first derivative only'], 'Lagrange error uses a bound on the next derivative.', 'Use the next derivative.']
       : ['Lagrange error bound controls what?', 'remainder after a Taylor polynomial', ['radius of convergence only', 'average value', 'slope field'], 'It bounds Taylor approximation error.', 'It is an error estimate.']
@@ -289,7 +289,7 @@ function genericProblem(unitId, concept, index, difficulty) {
       ? ['If sum a_n converges but sum |a_n| diverges, convergence is what?', 'conditional', ['absolute', 'divergent', 'geometric'], 'Conditional convergence means only the original series converges.', 'Absolute convergence is stronger.']
       : ['Absolute convergence tests which series?', 'sum |a_n|', ['sum a_n only', 'sequence a_n', 'partial sums only'], 'Take absolute values of terms.', 'Do not confuse absolute value with alternating signs.']
     if (c.includes('using series')) return hard
-      ? ['To approximate e^0.1 with a series, which first three terms are used?', '1+0.1+(0.1)^2/2', ['0.1-(0.1)^3/6', '1-(0.1)^2/2', '1/(1-0.1)'], 'Use the e^x Maclaurin series.', 'Choose the correct base series.']
+      ? ['To approximate e^0.1 with a series, which first three terms are used?', '1 + 0.1 + (0.1)^2/2', ['0.1 - (0.1)^3/6', '1 - (0.1)^2/2', '1/(1 - 0.1)'], 'Use the e^x Maclaurin series: 1 + x + x^2/2! + ... with x=0.1.', 'Choose the correct base series.']
       : ['Series approximations usually improve by doing what?', 'adding more valid terms', ['changing the center randomly', 'dropping the first term', 'ignoring error'], 'More terms generally improve an approximation within convergence.', 'Stay inside the interval of convergence.']
     return hard
       ? ['Does a_n=(3n+1)/n converge, and to what?', 'Converges to 3', ['Diverges', 'Converges to 1', 'Converges to 0'], 'Rewrite as 3+1/n.', 'Simplify before taking the limit.']

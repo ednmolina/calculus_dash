@@ -1284,6 +1284,7 @@ function toDiagnosticLatex(value) {
     .replace(/\*/g, '\\cdot ')
     // derivative fractions must come before general fraction rules
     .replace(/d\^2y\/dx\^2/g, '\\frac{d^{2}y}{dx^{2}}')
+    .replace(/dr\/dtheta/g, '\\frac{dr}{d\\theta}')
     .replace(/dy\/dx/g, '\\frac{dy}{dx}')
     .replace(/dy\/dt/g, '\\frac{dy}{dt}')
     .replace(/dx\/dt/g, '\\frac{dx}{dt}')
@@ -1296,6 +1297,7 @@ function toDiagnosticLatex(value) {
     .replace(/([A-Za-z0-9)}])\s*\^\s*\(([^)]+)\)/g, '$1^{$2}')
     .replace(/([A-Za-z0-9)}])\s*\^\s*(-?\d+)/g, '$1^{$2}')
     .replace(/([A-Za-z0-9)}])\s*\^\s*([A-Za-z][A-Za-z0-9]*)/g, '$1^{$2}')
+    .replace(/([A-Za-z])_([A-Za-z0-9]+)/g, '$1_{$2}')
     .replace(/\bf\^-1\b/g, 'f^{-1}')
     .replace(/\blog_(\d+)\(/g, '\\log_{$1}(')
     .replace(/\bln\b/g, '\\ln')
@@ -1321,6 +1323,8 @@ function toDiagnosticLatex(value) {
     // a/(b) inline  e.g. 1/(x+1)^2
     .replace(/([A-Za-z\d]+)\/\(([^()]+)\)(\^[{]?[^}\s,]+[}]?|\^-?\d+)?/g, (_, n, d, exp) =>
       `\\frac{${n}}{${d}}${exp ?? ''}`)
+    // parenthesized numerator over simple denominator  e.g. (x^2)/2
+    .replace(/\(([^()]+)\)\/(\d+)/g, '\\frac{$1}{$2}')
     // simple numeric fraction inline  e.g. 1/6, 3/2
     .replace(/(?<![A-Za-z\d])([-]?\d+)\/(\d+)(?![A-Za-z\d])/g, '\\frac{$1}{$2}')
     .replace(/(\d+)\\pi\/(\d+)/g, '\\frac{$1\\pi}{$2}')
@@ -1346,7 +1350,7 @@ function DiagnosticMath({ value, displayMode = false }) {
 // Detects math-dense spans in prose text and renders them via KaTeX.
 // Covers: (a)/(b)^n fractions, exponents, sqrt, f'(x)/f''(x), dy/dx, pi, infinity, ->
 const INLINE_MATH_RE =
-  /(?:\([^()]*\)\s*\/\s*\([^()]*\)(?:\s*\^[({]?[^)\s,]+[)}]?)?|\([^()]*\)\s*\^[({]?[^)\s,]+[)}]?|[A-Za-z\d._]+\s*\^[({]?[A-Za-z\d.+\-*/^]+[)}]?|\bsqrt\s*\([^)]+\)|[A-Za-z]''\s*\([^)]*\)|[A-Za-z]'\s*\([^)]*\)|d[yxf]?\/d[xyzt](?:\^2)?|\bpi\b|\binfinity\b|->|[A-Za-z\d]+\/[A-Za-z\d()^{}]+)/g
+  /(?:\([^()]*\)\s*\/\s*\([^()]*\)(?:\s*\^[({]?[^)\s,]+[)}]?)?|\([^()]*\)\s*\^[({]?[^)\s,]+[)}]?|[A-Za-z\d._]+\s*\^[({]?[A-Za-z\d.+\-*/^]+[)}]?|[A-Za-z]_[A-Za-z0-9]+|\bsqrt\s*\([^)]+\)|[A-Za-z]''\s*\([^)]*\)|[A-Za-z]'\s*\([^)]*\)|dr\/dtheta|d[yxf]?\/d[xyzt](?:\^2)?|\bpi\b|\binfinity\b|->|[A-Za-z\d]+\/[A-Za-z\d()^{}]+)/g
 
 function DiagnosticMixedText({ value }) {
   const text = String(value)
