@@ -92,6 +92,18 @@ const conceptRows = [
 ]
 
 const handcrafted = {
+  'Product and quotient rules': [
+    ['Differentiate y = x^2 sin x.', '2x sin x + x^2 cos x', ['x^2 cos x', '2x cos x', '2x sin x - x^2 cos x'], 'Apply the product rule: (uv)\' = u\'v + uv\'.', 'Both terms are needed; multiplying the two derivatives alone is wrong.'],
+    ['Differentiate f(x) = (x^2 + 1)/(x - 1).', '(x^2 - 2x - 1)/(x - 1)^2', ['2x/(x - 1)', '(x^2 + 1)/(x - 1)^2', '(x^2 - 1)/(x - 1)^2'], 'Quotient rule: [2x(x-1) - (x^2+1)(1)]/(x-1)^2 = (x^2-2x-1)/(x-1)^2.', 'Do not differentiate numerator and denominator separately.'],
+  ],
+  'Local linearity and linearization': [
+    ['Find the linearization of f(x) = sqrt(x) at x = 9.', 'L(x) = 3 + (1/6)(x - 9)', ['L(x) = 3 + 6(x - 9)', 'L(x) = 9 + (1/6)(x - 3)', 'L(x) = 3 + (1/3)(x - 9)'], 'L(x) = f(a) + f\'(a)(x - a). f\'(9) = 1/(2*sqrt(9)) = 1/6.', 'Use f\'(a) as the slope, not f(a).'],
+    ['Use linearization of f(x) = e^x at x = 0 to approximate e^0.2.', '1.2', ['1.02', '1 + 0.2e^0.2', '0.8'], 'L(x) = 1 + x, so L(0.2) = 1.2.', 'The linearization of e^x at 0 is 1 + x, not e^x itself.'],
+  ],
+  'Differentials': [
+    ['If y = x^3, find dy when x = 2 and dx = 0.1.', '1.2', ['0.3', '0.4', '12'], 'dy = 3x^2 dx. At x = 2: dy = 3(4)(0.1) = 1.2.', 'Evaluate dy/dx at the given x before multiplying by dx.'],
+    ['The radius of a sphere is r = 5 cm. Use dV = 4*pi*r^2 dr to estimate the volume error if dr = 0.02 cm.', '2*pi cm^3', ['0.4*pi cm^3', '4*pi cm^3', '500*pi cm^3'], 'dV = 4*pi*(5)^2*(0.02) = 2*pi.', 'Plug r = 5 into the differential, not the volume formula.'],
+  ],
   'Estimating limits from graphs/tables': [
     ['A table gives f(1.9)=5.8, f(1.99)=5.98, f(2.01)=6.02, and f(2.1)=6.2. Estimate lim as x -> 2 of f(x).', '6', ['2', '5.8', 'Does not exist'], 'Values from both sides approach 6.', 'Use nearby values from both sides.'],
     ['A graph approaches y=-1 from the left of x=3 and y=4 from the right. What is lim as x -> 3 of f(x)?', 'Does not exist', ['-1', '4', '3/2'], 'The one-sided limits are unequal.', 'Do not average one-sided limits.'],
@@ -346,7 +358,21 @@ function makeQuestion(row, conceptIndex, difficulty) {
   }
 }
 
-export const diagnosticQuestions = conceptRows.flatMap((row, index) => [makeQuestion(row, index, 'easy'), makeQuestion(row, index, 'hard')])
+function seededShuffle(array, seed) {
+  const result = [...array]
+  let s = seed
+  for (let i = result.length - 1; i > 0; i--) {
+    s = (s * 1664525 + 1013904223) & 0xffffffff
+    const j = Math.abs(s) % (i + 1)
+    ;[result[i], result[j]] = [result[j], result[i]]
+  }
+  return result
+}
+
+export const diagnosticQuestions = seededShuffle(
+  conceptRows.flatMap((row, index) => [makeQuestion(row, index, 'easy'), makeQuestion(row, index, 'hard')]),
+  42,
+)
 
 export const diagnosticAnswerNotes = [
   'There are 180 diagnostic questions: one easier and one harder question for each of the 90 progress-tracker concepts.',
