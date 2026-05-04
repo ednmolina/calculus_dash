@@ -95,7 +95,15 @@ const apUnits = [
     path: 'AB/BC',
     abWeight: '10-12%',
     bcWeight: '4-7%',
-    concepts: ['Limit notation', 'One-sided limits', 'Infinite limits', 'Continuity', 'IVT', 'Squeeze theorem'],
+    concepts: [
+      'Estimating limits from graphs/tables',
+      'Algebraic limits: factoring, rationalizing, trig limits',
+      'One-sided limits and discontinuities',
+      'Continuity at a point and on an interval',
+      'Infinite limits and vertical asymptotes',
+      'Limits at infinity and horizontal asymptotes',
+      'Intermediate Value Theorem',
+    ],
   },
   {
     id: 'u2',
@@ -104,7 +112,15 @@ const apUnits = [
     path: 'AB/BC',
     abWeight: '10-12%',
     bcWeight: '4-7%',
-    concepts: ['Derivative definition', 'Average vs instantaneous rate', 'Power rule', 'Product rule', 'Quotient rule', 'Tangent lines'],
+    concepts: [
+      'Average vs. instantaneous rate of change',
+      'Definition of derivative',
+      'Tangent and normal lines',
+      'Power, constant multiple, sum/difference rules',
+      'Derivatives of exponential functions',
+      'Product and quotient rules',
+      'Derivatives of sine, cosine, tangent, cotangent, secant, cosecant',
+    ],
   },
   {
     id: 'u3',
@@ -113,7 +129,15 @@ const apUnits = [
     path: 'AB/BC',
     abWeight: '9-13%',
     bcWeight: '4-7%',
-    concepts: ['Chain rule', 'Implicit differentiation', 'Inverse functions', 'Inverse trig derivatives', 'Log and exponential derivatives'],
+    concepts: [
+      'Chain rule',
+      'Implicit differentiation',
+      'Derivatives of inverse functions',
+      'Derivatives of inverse trigonometric functions',
+      'Selecting derivative techniques',
+      'Higher-order derivatives',
+      'Logarithmic differentiation',
+    ],
   },
   {
     id: 'u4',
@@ -122,7 +146,15 @@ const apUnits = [
     path: 'AB/BC',
     abWeight: '10-15%',
     bcWeight: '6-9%',
-    concepts: ['Motion', 'Related rates', 'Linearization', "L'Hospital's Rule", 'Units and interpretation'],
+    concepts: [
+      'Derivatives as rates of change in context',
+      'Position, velocity, acceleration',
+      'Speed vs. velocity',
+      'Related rates',
+      'Local linearity and linearization',
+      'Differentials',
+      "L'Hopital's Rule",
+    ],
   },
   {
     id: 'u5',
@@ -131,7 +163,17 @@ const apUnits = [
     path: 'AB/BC',
     abWeight: '15-18%',
     bcWeight: '8-11%',
-    concepts: ['MVT and EVT', 'Increasing/decreasing', 'Concavity', 'Optimization', 'Graph analysis'],
+    concepts: [
+      'Mean Value Theorem',
+      'Extreme Value Theorem',
+      'Critical points',
+      'Increasing/decreasing intervals',
+      'First Derivative Test',
+      'Concavity and inflection points',
+      'Second Derivative Test',
+      'Curve sketching',
+      'Optimization',
+    ],
   },
   {
     id: 'u6',
@@ -140,7 +182,23 @@ const apUnits = [
     path: 'AB/BC',
     abWeight: '17-20%',
     bcWeight: '17-20%',
-    concepts: ['Riemann sums', 'Definite integrals', 'FTC', 'u-substitution', 'Accumulation functions', 'Average value'],
+    concepts: [
+      'Antiderivatives and indefinite integrals',
+      'Definite integrals as signed area',
+      'Riemann sums and summation notation',
+      'Trapezoidal approximation',
+      'Fundamental Theorem of Calculus, Part 1',
+      'Fundamental Theorem of Calculus, Part 2',
+      'Accumulation functions',
+      'Net change theorem',
+      'Definite integral properties',
+      'Integration by substitution',
+      'Long division before integrating rational functions',
+      'Integration by parts',
+      'Partial fractions',
+      'Improper integrals',
+      'Choosing an integration technique',
+    ],
   },
   {
     id: 'u7',
@@ -149,7 +207,15 @@ const apUnits = [
     path: 'AB/BC',
     abWeight: '6-12%',
     bcWeight: '6-9%',
-    concepts: ['Slope fields', "Euler's method", 'Separable equations', 'Exponential models', 'Logistic models'],
+    concepts: [
+      'Slope fields',
+      'Verifying solutions',
+      'Separable differential equations',
+      'Particular solutions',
+      'Exponential growth and decay',
+      'Logistic growth',
+      "Euler's method",
+    ],
   },
   {
     id: 'u8',
@@ -158,7 +224,17 @@ const apUnits = [
     path: 'AB/BC',
     abWeight: '10-15%',
     bcWeight: '6-9%',
-    concepts: ['Area between curves', 'Volumes', 'Washer method', 'Shell method', 'Physical applications'],
+    concepts: [
+      'Average value of a function',
+      'Particle motion using integrals',
+      'Accumulation in applied contexts',
+      'Area between curves',
+      'Volume by cross sections',
+      'Disk method',
+      'Washer method',
+      'Volume around non-axis lines',
+      'Arc length of a function',
+    ],
   },
   {
     id: 'u9',
@@ -167,7 +243,18 @@ const apUnits = [
     path: 'BC only',
     abWeight: 'N/A',
     bcWeight: '11-12%',
-    concepts: ['Parametric derivatives', 'Vector motion', 'Speed and acceleration', 'Polar derivatives', 'Polar area'],
+    concepts: [
+      'Parametric derivatives',
+      'Second derivatives for parametric curves',
+      'Parametric area',
+      'Parametric arc length',
+      'Polar coordinates and graph interpretation',
+      'Polar slope',
+      'Polar area',
+      'Polar arc length',
+      'Vector-valued position, velocity, acceleration',
+      'Vector-valued speed, distance, and displacement',
+    ],
   },
   {
     id: 'u10',
@@ -176,9 +263,78 @@ const apUnits = [
     path: 'BC only',
     abWeight: 'N/A',
     bcWeight: '17-18%',
-    concepts: ['Convergence tests', 'Alternating series', 'Power series', 'Taylor series', 'Maclaurin series', 'Error bounds'],
+    concepts: [
+      'Sequence convergence',
+      'Geometric series',
+      'Harmonic and p-series',
+      'Comparison and limit comparison tests',
+      'Alternating series test and error bound',
+      'Ratio test',
+      'Absolute vs. conditional convergence',
+      'Taylor polynomials',
+      'Lagrange error bound',
+      'Power series radius and interval of convergence',
+      'Taylor/Maclaurin series',
+      'Using series to approximate values',
+    ],
   },
 ]
+
+const unitDiagnosticLinks = {
+  u1: [{ id: 1, label: 'Limits, continuity, asymptotes' }],
+  u2: [
+    { id: 2, label: 'Derivative definition and tangents' },
+    { id: 3, label: 'Basic differentiation rules' },
+  ],
+  u3: [
+    { id: 4, label: 'Chain rule and composites' },
+    { id: 5, label: 'Implicit and inverse derivatives' },
+    { id: 6, label: 'Inverse trig and logarithmic differentiation' },
+  ],
+  u4: [
+    { id: 7, label: 'Motion derivatives' },
+    { id: 8, label: 'Related rates' },
+    { id: 9, label: 'Linearization and differentials' },
+    { id: 10, label: "L'Hopital and indeterminate forms" },
+  ],
+  u5: [
+    { id: 11, label: 'MVT, EVT, critical points' },
+    { id: 12, label: 'Increasing, extrema, concavity' },
+    { id: 13, label: 'Curve sketching and optimization' },
+  ],
+  u6: [
+    { id: 14, label: 'Antiderivatives and IVPs' },
+    { id: 15, label: 'Riemann sums and trapezoids' },
+    { id: 16, label: 'FTC and accumulation' },
+    { id: 17, label: 'Net change and average value' },
+    { id: 18, label: 'Substitution' },
+    { id: 24, label: 'Integration by parts' },
+    { id: 25, label: 'Partial fractions and improper integrals' },
+  ],
+  u7: [
+    { id: 19, label: 'Separable differential equations' },
+    { id: 20, label: "Euler's method and logistic growth" },
+  ],
+  u8: [
+    { id: 17, label: 'Average value and net change' },
+    { id: 21, label: 'Area between curves' },
+    { id: 22, label: 'Volumes' },
+    { id: 23, label: 'Arc length' },
+  ],
+  u9: [
+    { id: 26, label: 'Parametric equations' },
+    { id: 27, label: 'Polar area' },
+    { id: 28, label: 'Vector-valued motion' },
+  ],
+  u10: [
+    { id: 29, label: 'Sequences and geometric series' },
+    { id: 30, label: 'Convergence tests' },
+    { id: 31, label: 'Alternating series error' },
+    { id: 32, label: 'Taylor polynomials' },
+    { id: 33, label: 'Power series convergence' },
+    { id: 34, label: 'Series manipulation' },
+  ],
+}
 
 const defaultStudent = {
   name: '',
@@ -1294,34 +1450,55 @@ function FactSheetCard({ sheet }) {
 }
 
 function DiagnosticQuestionCard({ question, selectedAnswer, onSelect }) {
-  const sourceClass = question.source === 'File 1' ? 'source-blue' : 'source-green'
-  const selectedIsCorrect = selectedAnswer === question.answer
+  const hasChoices = Array.isArray(question.choices) && question.choices.length > 0
+  const sourceClass = question.source === 'File 1' ? 'source-blue' : question.source === 'File 2' ? 'source-green' : 'source-guide'
+  const selectedIsCorrect = hasChoices && selectedAnswer === question.answer
 
   return (
-    <article className="diagnostic-card">
+    <article className="diagnostic-card" id={`diagnostic-question-${question.id}`}>
       <div className="diagnostic-card-header">
         <span className={`question-number-badge ${sourceClass}`}>{question.id}</span>
         <strong>Question {question.id}</strong>
       </div>
       <p className="diagnostic-concept">{question.concept}</p>
-      <p className="diagnostic-prompt">{prettyDiagnosticText(question.prompt)}</p>
-      <div className="diagnostic-choices">
-        {question.choices.map((choice, index) => {
-          const letter = String.fromCharCode(97 + index)
-          const isSelected = selectedAnswer === letter
-          const correctnessClass = isSelected ? (selectedIsCorrect ? 'correct' : 'incorrect') : ''
+      <p className="diagnostic-prompt">
+        <DiagnosticRichText value={question.prompt} />
+      </p>
+      {hasChoices ? (
+        <div className="diagnostic-choices">
+          {question.choices.map((choice, index) => {
+            const letter = String.fromCharCode(97 + index)
+            const isSelected = selectedAnswer === letter
+            const correctnessClass = isSelected ? (selectedIsCorrect ? 'correct' : 'incorrect') : ''
 
-          return (
-            <button className={correctnessClass} key={choice} type="button" onClick={() => onSelect(question.id, letter)}>
-              <span>{letter}.</span>
-              <em>{prettyDiagnosticText(choice)}</em>
-            </button>
-          )
-        })}
-      </div>
-      {selectedAnswer && (
+            return (
+              <button className={correctnessClass} key={choice} type="button" onClick={() => onSelect(question.id, letter)}>
+                <span>{letter}.</span>
+                <em>{prettyDiagnosticText(choice)}</em>
+              </button>
+            )
+          })}
+        </div>
+      ) : (
+        <div className="diagnostic-choices diagnostic-status-choices">
+          <button className={selectedAnswer === 'solved' ? 'correct' : ''} type="button" onClick={() => onSelect(question.id, 'solved')}>
+            <span>OK</span>
+            <em>Solved without help</em>
+          </button>
+          <button className={selectedAnswer === 'review' ? 'incorrect' : ''} type="button" onClick={() => onSelect(question.id, 'review')}>
+            <span>!</span>
+            <em>Flag for review</em>
+          </button>
+        </div>
+      )}
+      {hasChoices && selectedAnswer && (
         <p className={`diagnostic-feedback ${selectedIsCorrect ? 'correct' : 'incorrect'}`}>
           {selectedIsCorrect ? 'Correct.' : 'Not quite. Try another answer or review this concept.'}
+        </p>
+      )}
+      {!hasChoices && selectedAnswer && (
+        <p className={`diagnostic-feedback ${selectedAnswer === 'solved' ? 'correct' : 'incorrect'}`}>
+          {selectedAnswer === 'solved' ? 'Marked solved. Worked solution remains tutor-only.' : 'Flagged for tutor review. Worked solution remains tutor-only.'}
         </p>
       )}
     </article>
@@ -1330,8 +1507,12 @@ function DiagnosticQuestionCard({ question, selectedAnswer, onSelect }) {
 
 function buildDiagnosticSummary(responses) {
   const answeredQuestions = diagnosticQuestions.filter((question) => responses[question.id])
-  const correctQuestions = answeredQuestions.filter((question) => responses[question.id] === question.answer)
-  const missedQuestions = answeredQuestions.filter((question) => responses[question.id] !== question.answer)
+  const correctQuestions = answeredQuestions.filter((question) =>
+    Array.isArray(question.choices) && question.choices.length > 0 ? responses[question.id] === question.answer : responses[question.id] === 'solved',
+  )
+  const missedQuestions = answeredQuestions.filter((question) =>
+    Array.isArray(question.choices) && question.choices.length > 0 ? responses[question.id] !== question.answer : responses[question.id] === 'review',
+  )
   const score = answeredQuestions.length ? clampPercent((correctQuestions.length / answeredQuestions.length) * 100) : 0
 
   return {
@@ -1359,8 +1540,8 @@ function DiagnosticResultsSummary({ responses, summary, onClear }) {
       </div>
       <div className="metric-grid diagnostic-metrics">
         <DashboardCard title="Answered" value={`${summary.answered}/${diagnosticQuestions.length}`} caption="Saved locally in this browser." />
-        <DashboardCard title="Correct so far" value={`${summary.correct}/${summary.answered || 0}`} caption="Based on clicked answers." />
-        <DashboardCard title="Current score" value={`${summary.score}%`} caption="Correct divided by answered." />
+        <DashboardCard title="Solved so far" value={`${summary.correct}/${summary.answered || 0}`} caption="Multiple choice counts correct; written items count solved." />
+        <DashboardCard title="Current score" value={`${summary.score}%`} caption="Solved or correct divided by answered." />
       </div>
       <div className="diagnostic-focus-box">
         <h3>What to learn next</h3>
@@ -1376,15 +1557,22 @@ function DiagnosticResultsSummary({ responses, summary, onClear }) {
       </div>
       {summary.missed.length > 0 && (
         <div className="diagnostic-missed-table">
-          {summary.missed.map((question) => (
-            <article key={question.id}>
-              <span className={`question-number-badge ${question.source === 'File 1' ? 'source-blue' : 'source-green'}`}>{question.id}</span>
-              <strong>{question.concept}</strong>
-              <p>
-                Chose {responsesLabel(question, responses[question.id])}. Correct: {responsesLabel(question, question.answer)}
-              </p>
-            </article>
-          ))}
+          {summary.missed.map((question) => {
+            const sourceClass = question.source === 'File 1' ? 'source-blue' : question.source === 'File 2' ? 'source-green' : 'source-guide'
+            const hasChoices = Array.isArray(question.choices) && question.choices.length > 0
+
+            return (
+              <article key={question.id}>
+                <span className={`question-number-badge ${sourceClass}`}>{question.id}</span>
+                <strong>{question.concept}</strong>
+                <p>
+                  {hasChoices
+                    ? `Chose ${responsesLabel(question, responses[question.id])}. Correct: ${responsesLabel(question, question.answer)}`
+                    : `Status: ${responsesLabel(question, responses[question.id])}. Review the worked steps in Tutor/Admin.`}
+                </p>
+              </article>
+            )
+          })}
         </div>
       )}
     </section>
@@ -1393,25 +1581,35 @@ function DiagnosticResultsSummary({ responses, summary, onClear }) {
 
 function responsesLabel(question, selectedAnswer) {
   if (!selectedAnswer) return 'an incorrect answer.'
+  if (!Array.isArray(question.choices) || question.choices.length === 0) {
+    return selectedAnswer === 'solved' ? 'solved without help' : 'flagged for review'
+  }
   const selectedChoice = question.choices[selectedAnswer.charCodeAt(0) - 97]
   return `${selectedAnswer}. ${prettyDiagnosticText(selectedChoice)}`
 }
 
 function DiagnosticAnswerKeyItem({ question }) {
-  const sourceClass = question.source === 'File 1' ? 'source-blue' : 'source-green'
-  const selectedChoice = question.choices[question.answer.charCodeAt(0) - 97]
+  const hasChoices = Array.isArray(question.choices) && question.choices.length > 0
+  const sourceClass = question.source === 'File 1' ? 'source-blue' : question.source === 'File 2' ? 'source-green' : 'source-guide'
+  const selectedChoice = hasChoices ? question.choices[question.answer.charCodeAt(0) - 97] : null
 
   return (
     <details className="answer-key-detail">
       <summary>
         <span className={`question-number-badge ${sourceClass}`}>{question.id}</span>
-        <strong>{question.answer}</strong>
+        <strong>{hasChoices ? question.answer : 'FR'}</strong>
         <em>{question.concept}</em>
       </summary>
       <div className="answer-detail-body">
-        <p>
-          <b>Correct answer:</b> {question.answer}. <DiagnosticRichText value={selectedChoice} />
-        </p>
+        {hasChoices ? (
+          <p>
+            <b>Correct answer:</b> {question.answer}. <DiagnosticRichText value={selectedChoice} />
+          </p>
+        ) : (
+          <p>
+            <b>Problem:</b> <DiagnosticRichText value={question.prompt} />
+          </p>
+        )}
         <ol>
           {(diagnosticSolutions[question.id] || ['Solution steps not added yet.']).map((step) => (
             <li key={step}>
@@ -1597,16 +1795,15 @@ function APCalculusTutoringDashboard() {
   const lastRemoteSnapshotJsonRef = useRef('')
   const skipNextRemoteWriteRef = useRef(false)
   const remoteReadyRef = useRef(!initialDashboardId || !firebaseEnabled)
-  const lastLocalSaveTimestampRef = useRef(
-    (() => {
-      if (typeof window === 'undefined') return 0
-      const stored = localStorage.getItem('ap-calc-last-save-ts-v6')
-      if (stored) return parseInt(stored, 10)
-      // No timestamp stored yet, but if we have local data treat it as more recent than
-      // any legacy Firestore record that also has no clientTimestamp.
-      return localStorage.getItem(STORAGE_KEY) ? Date.now() : 0
-    })(),
-  )
+  const [initialLastLocalSaveTimestamp] = useState(() => {
+    if (typeof window === 'undefined') return 0
+    const stored = localStorage.getItem('ap-calc-last-save-ts-v6')
+    if (stored) return parseInt(stored, 10)
+    // No timestamp stored yet, but if we have local data treat it as more recent than
+    // any legacy Firestore record that also has no clientTimestamp.
+    return localStorage.getItem(STORAGE_KEY) ? Date.now() : 0
+  })
+  const lastLocalSaveTimestampRef = useRef(initialLastLocalSaveTimestamp)
 
   if (clientIdRef.current == null) {
     clientIdRef.current = getClientId()
@@ -1957,6 +2154,15 @@ function APCalculusTutoringDashboard() {
 
   function selectDiagnosticAnswer(questionId, answer) {
     setDiagnosticResponses((current) => ({ ...current, [questionId]: answer }))
+  }
+
+  function openDiagnosticQuestion(questionId) {
+    setActivePage('diagnostic')
+    if (typeof window === 'undefined') return
+
+    window.setTimeout(() => {
+      document.getElementById(`diagnostic-question-${questionId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 0)
   }
 
   function setConceptProgress(unitId, concept, field, value) {
@@ -2478,7 +2684,7 @@ function APCalculusTutoringDashboard() {
 
       {activePage === 'timeline' && (
         <section className="page-grid">
-          <TimelineView timeline={timeline} />
+          <TimelineView onOpenDiagnosticQuestion={openDiagnosticQuestion} timeline={timeline} />
         </section>
       )}
 
@@ -2488,7 +2694,7 @@ function APCalculusTutoringDashboard() {
             <div className="section-header">
               <div>
                 <p className="eyebrow">Student-facing diagnostic</p>
-                <h2>Foundational Skills Diagnostic</h2>
+                <h2>AP Calculus Concept Diagnostic</h2>
               </div>
               <p className="syntax-note">
                 {diagnosticSummary.answered}/{diagnosticQuestions.length} answered. Answers save automatically in this browser.
@@ -2853,7 +3059,7 @@ function APCalculusTutoringDashboard() {
   )
 }
 
-function TimelineView({ timeline }) {
+function TimelineView({ timeline, onOpenDiagnosticQuestion }) {
   const todayLeft = ((timeline.today.getTime() - timeline.start.getTime()) / timeline.span) * 100
   const clampedTodayLeft = Math.max(0, Math.min(100, todayLeft))
   const hasActivity = timeline.rows.some((row) => row.start)
@@ -2920,6 +3126,7 @@ function TimelineView({ timeline }) {
             const width = row.start && row.end ? Math.max(4, ((row.end.getTime() - row.start.getTime()) / timeline.span) * 100) : 0
             const plannedLeft = ((row.plannedStart.getTime() - timeline.start.getTime()) / timeline.span) * 100
             const plannedWidth = Math.max(4, ((row.plannedEnd.getTime() - row.plannedStart.getTime()) / timeline.span) * 100)
+            const diagnosticLinks = unitDiagnosticLinks[row.unit.id] || []
 
             return (
               <div className="timeline-row" key={row.unit.id}>
@@ -2934,6 +3141,16 @@ function TimelineView({ timeline }) {
                     Target: {row.expectedByToday}% by today · {row.paceGap >= 0 ? '+' : ''}
                     {row.paceGap} pts vs pace
                   </em>
+                  {diagnosticLinks.length > 0 && (
+                    <div className="timeline-diagnostic-links" aria-label={`${row.unit.title} diagnostic links`}>
+                      <b>Diagnostic:</b>
+                      {diagnosticLinks.map((link) => (
+                        <button key={`${row.unit.id}-${link.id}`} type="button" onClick={() => onOpenDiagnosticQuestion(link.id)}>
+                          Q{link.id}: {link.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="timeline-track">
                   <div className="timeline-plan-bar" style={{ left: `${plannedLeft}%`, width: `${plannedWidth}%` }}>
