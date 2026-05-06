@@ -1348,9 +1348,10 @@ function DiagnosticMath({ value, displayMode = false }) {
 }
 
 // Detects math-dense spans in prose text and renders them via KaTeX.
-// Covers: (a)/(b)^n fractions, exponents, sqrt, f'(x)/f''(x), dy/dx, pi, infinity, ->
+// Covers: (a)/(b)^n fractions, exponents, sqrt, f'(x)/f''(x), dy/dx, trig/log calls,
+//         function notation f(x), pi, infinity, ->
 const INLINE_MATH_RE =
-  /(?:\([^()]*\)\s*\/\s*\([^()]*\)(?:\s*\^[({]?[^)\s,]+[)}]?)?|\([^()]*\)\s*\^[({]?[^)\s,]+[)}]?|[A-Za-z\d._]+\s*\^[({]?[A-Za-z\d.+\-*/^]+[)}]?|[A-Za-z]_[A-Za-z0-9]+|\bsqrt\s*\([^)]+\)|[A-Za-z]''\s*\([^)]*\)|[A-Za-z]'\s*\([^)]*\)|dr\/dtheta|d[yxf]?\/d[xyzt](?:\^2)?|\bpi\b|\binfinity\b|->|[A-Za-z\d]+\/[A-Za-z\d()^{}]+)/g
+  /(?:\([^()]*\)\s*\/\s*\([^()]*\)(?:\s*\^[({]?[^)\s,]+[)}]?)?|\([^()]*\)\s*\^[({]?[^)\s,]+[)}]?|[A-Za-z\d._]+\s*\^[({]?[A-Za-z\d.+\-*/^]+[)}]?|[A-Za-z]_[A-Za-z0-9]+|\bsqrt\s*\([^)]+\)|[A-Za-z]''\s*\([^)]*\)|[A-Za-z]'\s*\([^)]*\)|dr\/dtheta|d[yxf]?\/d[xyzt](?:\^2)?|\b(?:arcsin|arccos|arctan|sin|cos|tan|cot|sec|csc|ln|log)\s*\([^)]+\)|\b(?:arcsin|arccos|arctan|sin|cos|tan|cot|sec|csc|ln)\s+[A-Za-z]|[A-Za-z]\([A-Za-z0-9 +\-*/^.]*\)|\bpi\b|\binfinity\b|->|[A-Za-z\d]+\/[A-Za-z\d()^{}]+)/g
 
 function DiagnosticMixedText({ value }) {
   const text = String(value)
@@ -1391,19 +1392,6 @@ function DiagnosticRichText({ value }) {
   )
 }
 
-function studentDiagnosticPrompt(value) {
-  return String(value)
-    .replace(/\bBC Only\.\s*/g, '')
-    .replace(/\bEasy:\s*/g, 'Part A. ')
-    .replace(/\bHard:\s*/g, 'Part B. ')
-}
-
-function studentDiagnosticChoice(value) {
-  return String(value)
-    .replace(/\bEasy:\s*/g, '')
-    .replace(/;\s*Hard:\s*/g, '; ')
-    .replace(/\bHard:\s*/g, '')
-}
 
 function FormulaItem({ item }) {
   if (typeof item === 'string') return <li>{item}</li>
@@ -1484,7 +1472,7 @@ function DiagnosticQuestionCard({ question, selectedAnswer, onSelect }) {
         </details>
       </div>
       <p className="diagnostic-prompt">
-        <DiagnosticRichText value={studentDiagnosticPrompt(question.prompt)} />
+        <DiagnosticRichText value={question.prompt} />
       </p>
       {hasChoices ? (
         <div className="diagnostic-choices">
@@ -1495,7 +1483,7 @@ function DiagnosticQuestionCard({ question, selectedAnswer, onSelect }) {
             return (
               <button className={isSelected ? 'selected' : ''} key={choice} type="button" onClick={() => onSelect(question.id, letter)}>
                 <span>{letter}.</span>
-                <em><DiagnosticRichText value={studentDiagnosticChoice(choice)} /></em>
+                <em><DiagnosticRichText value={choice} /></em>
               </button>
             )
           })}
@@ -1587,9 +1575,16 @@ function DiagnosticResultsSummary({ responses, summary, onClear }) {
                 <span className={`question-number-badge ${sourceClass}`}>{question.id}</span>
                 <strong>{question.concept}</strong>
                 <p>
-                  {hasChoices
-                    ? `Chose ${responsesLabel(question, responses[question.id])}. Correct: ${responsesLabel(question, question.answer)}`
-                    : `Status: ${responsesLabel(question, responses[question.id])}. Review the worked steps in Tutor/Admin.`}
+                  {hasChoices ? (
+                    <>
+                      Chose {String.fromCharCode(responses[question.id]?.charCodeAt(0) ?? 97)}.{' '}
+                      <DiagnosticRichText value={question.choices[responses[question.id]?.charCodeAt(0) - 97] ?? ''} />.
+                      {' '}Correct: {question.answer}.{' '}
+                      <DiagnosticRichText value={question.choices[question.answer.charCodeAt(0) - 97]} />
+                    </>
+                  ) : (
+                    `Status: ${responses[question.id] === 'solved' ? 'solved without help' : 'flagged for review'}. Review the worked steps in Tutor/Admin.`
+                  )}
                 </p>
               </article>
             )
@@ -1598,15 +1593,6 @@ function DiagnosticResultsSummary({ responses, summary, onClear }) {
       )}
     </section>
   )
-}
-
-function responsesLabel(question, selectedAnswer) {
-  if (!selectedAnswer) return 'an incorrect answer.'
-  if (!Array.isArray(question.choices) || question.choices.length === 0) {
-    return selectedAnswer === 'solved' ? 'solved without help' : 'flagged for review'
-  }
-  const selectedChoice = question.choices[selectedAnswer.charCodeAt(0) - 97]
-  return `${selectedAnswer}. ${prettyDiagnosticText(selectedChoice)}`
 }
 
 function DiagnosticAnswerKeyItem({ question }) {
